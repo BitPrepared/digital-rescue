@@ -1,0 +1,70 @@
+<div class="col-xs-6 col-sm-4">
+
+	<form name="ricerca" class="form-ricerca" role="form" ua-login ua-error="error-msg" novalidate ng-submit="cerca()">
+		<fieldset>
+
+			<!-- Form Name -->
+			<legend>Richiesta ricerca codice censimento</legend>
+
+			<!-- Text input-->
+			<div class="form-group">
+				<label class="control-label" for="nome">Nome</label>
+				<div class="controls">
+					<input id="nome" name="nome" placeholder="name" class="form-control input-sm" ng-minlength=2 required type="text" ng-model="richiesta.nome">
+					<p class="help-block">Nome Associato</p>
+				</div>
+			</div>
+
+			<!-- Text input-->
+			<div class="form-group">
+				<label class="control-label" for="cognome">Cognome</label>
+				<div class="controls">
+					<input id="cognome" name="cognome" placeholder="cognome" class="form-control input-sm" ng-minlength=2 required type="text" ng-model="richiesta.cognome">
+					<p class="help-block">Cognome Associato</p>
+				</div>
+			</div>
+
+			<!-- Text input-->
+			<div class="form-group">
+				<label class="control-label" for="datanascita">Data di Nascita</label>
+				<div class="controls">
+
+
+					<input id="datanascita" name="datanascita" type="text" class="form-control input-sm" datepicker-popup="dd/MM/yyyy" required ng-model="dt" is-open="opened" show-button-bar="false" datepicker-options="dateOptions" show-weeks="false" date-disabled="disabled(date, mode)" ng-required="true" close-text="Close" />
+
+					<p class="help-block">Data di Nascita Associato</p>
+
+				</div>
+			</div>
+
+			<!-- Text input-->
+			<div class="form-group">
+				<label class="control-label" for="email">Email</label>
+				<div class="controls">
+					<input id="email" name="email" placeholder="email@example.com" class="form-control input-sm" required type="email" ng-model="richiesta.email">
+					<p class="help-block">Email Associato</p>
+				</div>
+			</div>
+
+			<p id="error-msg"></p>
+
+			<!-- Button (Double) -->
+			<div class="form-group">
+				<label class="control-label" for="cerca"></label>
+				<div class="controls">
+					<button id="cerca" name="cerca" class="btn btn-success" ng-disabled="!ricerca.$valid">Cerca</button>
+				</div>
+			</div>
+
+		</fieldset>
+	</form>
+
+</div>
+
+<div class="col-xs-6 col-sm-4">
+	<legend>Help in linea</legend>
+	<p>Inserisci tutti i dati di ricerca, riceverai sull'email che hai dato nel censimento, il tuo codice.</p>
+	<p>Il processo e' automatizzato ma per poter avere risposta possono passare da 10 minuti a diverse ore a seconda
+	della disponibilita' di risorse nel sistema.</p>
+	<p>Il pulsante "cerca" si attiva solo quando tutti i campi sono stati correttamente inseriti</p>
+</div>

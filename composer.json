@@ -1,0 +1,9 @@
+{
+    "require": {
+        "slim/slim": "2.*",
+        "gabordemooij/redbean": "3.5.1",
+        "raveren/kint": "0.9",
+        "nuovo/spreadsheet-reader": "dev-master"
+    }
+}
+
