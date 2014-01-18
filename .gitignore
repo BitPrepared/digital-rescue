@@ -1,5 +1,9 @@
 .DS_Store
 
-composer.lock
+# directory
+logs
 vendor
+
+# files
+composer.lock
 config.php
