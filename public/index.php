@@ -11,10 +11,19 @@ $password = $config['db']['password'];
 R::setup($dsn,$username,$password);
 R::freeze(true);
 
+$logger = new \Flynsarmy\SlimMonolog\Log\MonologWriter(array(
+    'handlers' => array(
+        new \Monolog\Handler\StreamHandler('../logs/'.date('Y-m-d').'.log'),
+    ),
+));
+
 $app = new \Slim\Slim();
 
 $app->config(array(
     //'debug' => true,
+    'log.enabled' => true,
+    'log.level' => \Slim\Log::DEBUG,
+    'log.writer' => $logger,
     'templates.path' => '../templates/',
     'oauth.cliendId' => 'r-index',
     'oauth.secret' => 'testpass',
@@ -32,6 +41,10 @@ class ResourceNotFoundException extends Exception {}
 
 // handle GET requests for /
 $app->get('/', function () use ($app) {  
+
+	$log = $app->log;
+
+	$log->debug('called /');
 
 	$title = $app->config('title');
 
