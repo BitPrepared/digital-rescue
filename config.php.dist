@@ -1,0 +1,14 @@
+<?php
+
+$config = array(
+    'db' => array(
+        'user' => 'username db',
+        'password' => 'password db',
+        'host' => '127.0.0.1 o localhost o hostname',
+        'database' => 'database name'
+    ),
+    'title' => 'Titolo del portale'
+);
+
+
+?>
