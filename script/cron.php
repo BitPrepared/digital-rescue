@@ -35,6 +35,8 @@ foreach ($task_list as $task_id => $task) {
 	$task->status = \Rescue\RequestStatus::IN_PROGRESS;
 
 	R::store($task);
+
+	\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,'Task preso in carico');
 	
 	if( \Rescue\RequestType::SEARCH == $task->type ) {
 
@@ -94,6 +96,7 @@ foreach ($task_list as $task_id => $task) {
 				*/
 				$task->status = \Rescue\RequestStatus::FAILED;
 				$task->result = "Fallito l'invio a ".json_decode($failures);
+				R::store($task);
 			} else {
 				$task->status = \Rescue\RequestStatus::ELABORATED; 
 				$task->result = "Inviato correttamente codice socio : $codice_socio a $email";
@@ -105,48 +108,83 @@ foreach ($task_list as $task_id => $task) {
 			$log->addError($e->getTraceAsString());
 			$task->result = "Fallito l'invio, errore nel trasporto";
 			$task->status = \Rescue\RequestStatus::FAILED; 
+			R::store($task);
 		}
 
-		R::store($task);
+		\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,$logger->dump());
 
-		$log_records = $handler->getRecords();
-		/*
-			{
-			  "log_mail": "++ Starting Swift_SmtpTransport\n<< 220 mx.google.com ESMTP o47sm29825570eem.21 - gsmtp\r\n\n>> EHLO [127.0.0.1]\r\n\n<< 250-mx.google.com at your service, [79.32.23.147]\r\n250-SIZE 35882577\r\n250-8BITMIME\r\n250-AUTH LOGIN PLAIN XOAUTH XOAUTH2 PLAIN-CLIENTTOKEN\r\n250-ENHANCEDSTATUSCODES\r\n250 CHUNKING\r\n\n>> AUTH LOGIN\r\n\n<< 334 VXNlcm5hbWU6\r\n\n>> b3JzZXR0b0BnbWFpbC5jb20=\r\n\n<< 334 UGFzc3dvcmQ6\r\n\n>> MCRyaSQ=\r\n\n<< 535-5.7.8 Username and Password not accepted. Learn more at\r\n535 5.7.8 http://support.google.com/mail/bin/answer.py?answer=14257 o47sm29825570eem.21 - gsmtp\r\n\n!! Expected response code 235 but got code \"535\", with message \"535-5.7.8 Username and Password not accepted. Learn more at\r\n535 5.7.8 http://support.google.com/mail/bin/answer.py?answer=14257 o47sm29825570eem.21 - gsmtp\r\n\"\n>> RSET\r\n\n<< 250 2.1.5 Flushed o47sm29825570eem.21 - gsmtp\r\n\n>> AUTH PLAIN b3JzZXR0b0BnbWFpbC5jb20Ab3JzZXR0b0BnbWFpbC5jb20AMCRyaSQ=\r\n\n<< 535-5.7.8 Username and Password not accepted. Learn more at\r\n535 5.7.8 http://support.google.com/mail/bin/answer.py?answer=14257 o47sm29825570eem.21 - gsmtp\r\n\n!! Expected response code 235 but got code \"535\", with message \"535-5.7.8 Username and Password not accepted. Learn more at\r\n535 5.7.8 http://support.google.com/mail/bin/answer.py?answer=14257 o47sm29825570eem.21 - gsmtp\r\n\"\n>> RSET\r\n\n<< 250 2.1.5 Flushed o47sm29825570eem.21 - gsmtp\r\n",
-			  "log_records": [
-			    {
-			      "message": "Failed to authenticate on SMTP server with username \"orsetto@gmail.com\" using 2 possible authenticators",
-			      "context": [],
-			      "level": 400,
-			      "level_name": "ERROR",
-			      "channel": "cron",
-			      "datetime": {
-			        "date": "2014-01-22 18:52:53",
-			        "timezone_type": 3,
-			        "timezone": "Europe/Rome"
-			      },
-			      "extra": [],
-			      "formatted": "[2014-01-22 18:52:53] cron.ERROR: Failed to authenticate on SMTP server with username \"orsetto@gmail.com\" using 2 possible authenticators [] []\n"
-			    }
-			  ]
+	} // end search 
+
+	if( \Rescue\RequestType::IMPORT == $task->type ) {
+
+		// /Users/yoghi/Documents/workspace/digital-rescue/test/resources/elenco.ods
+		$args = json_decode($task->arguments);
+
+		try {
+			$importer = new \BitPrepared\Asa\Importer();
+			$soci_trovati = $importer->carica($args->filename);
+
+			$soci = $soci_trovati[0];
+			foreach ($soci as $cod_socio => $asa_socio) {
+				\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,'Import del codice socio '.$cod_socio);
+				$find = R::findOne('asa',' csocio = ? ',array($cod_socio));
+				if ( null == $find ) {
+					$asa = R::dispense('asa');
+					foreach ($asa_socio as $key => $value) {
+						$asa->$key = $value;
+					}
+					$id = R::store($asa);
+				} else {
+					// CERCA LE 7 PICCOLE DIFFERENZE e FAI UPDATE E VERSIONING
+					$log->addWarning('Utente '.$cod_socio.' gia esistente. SKIP for now');
+				}
 			}
-		*/
-		foreach ($log_records as $record) {
-			$tlog = R::dispense('tlog');
-			$tlog->task_id = $task_id;
-			$tlog->level = $record['level'];
-			$tlog->message = $record['formatted'];
-			$id = R::store($tlog);	
+
+			foreach ($soci_trovati[1] as $error ) {
+				$log->addError($error);
+			}
+
+			$task->status = \Rescue\RequestStatus::ELABORATED; 
+			$task->result = "Import del file $filename avvenuto correttamente";
+		} 
+		catch(Exception $e){
+			$log->addError($message);
+			$log->addError($e->getTraceAsString());
+			$task->result = "Fallito l'invio, errore nel trasporto";
+			$task->status = \Rescue\RequestStatus::FAILED;
+			R::store($task);
 		}
 
-		$tlog = R::dispense('tlog');
-		$tlog->task_id = $task_id;
-		$tlog->level = Logger::INFO;
-		$tlog->message = $logger->dump();
-		$id = R::store($tlog);	
 
+	} // end import
+
+	R::store($task);
+
+}
+
+$log_records = $handler->getRecords();
+/*
+	{
+	  "log_records": [
+	    {
+	      "message": "Failed to authenticate on SMTP server with username \"orsetto@gmail.com\" using 2 possible authenticators",
+	      "context": [],
+	      "level": 400,
+	      "level_name": "ERROR",
+	      "channel": "cron",
+	      "datetime": {
+	        "date": "2014-01-22 18:52:53",
+	        "timezone_type": 3,
+	        "timezone": "Europe/Rome"
+	      },
+	      "extra": [],
+	      "formatted": "[2014-01-22 18:52:53] cron.ERROR: Failed to authenticate on SMTP server with username \"orsetto@gmail.com\" using 2 possible authenticators [] []\n"
+	    }
+	  ]
 	}
-
+*/
+foreach ($log_records as $record) {
+	\Rescue\RescueLogger::taskLog($task_id,$record['level'],$record['formatted']);
 }
 
 

@@ -6,14 +6,6 @@ use RedBean_Facade as R;
 
 class ResourceNotFoundException extends Exception {}
 
-class RequestStatus
-{
-    const QUEUE = "QUEUE";
-    const IN_PROCESS = "IN_PROCESS";
-    const FAILED = "FAILED";
-    const ELABORATED = "ELABORATED";
-}
-
 $dsn      = 'mysql:host='.$config['db']['host'].';dbname='.$config['db']['database'];
 $username = $config['db']['user'];
 $password = $config['db']['password'];
@@ -108,7 +100,7 @@ $app->get('/', function () use ($app) {
 
 	$app->render('index.html', array(
 		'title' => $title,
-		'footerText' => '©2013 Autore contenuto. Design by Designer sito'
+		'footerText' => '©2014 Stefano Tamagnini. Design by ....'
 	));
 
 });
@@ -141,12 +133,14 @@ $app->get('/location', function () use ($app) {
 
 $app->post('/fileupload', function () use ($app) {  
 
+	$log = $app->log;
+
 	$import = $app->config('import');
 	$upload_dir = $import['upload_dir'];
 
 	foreach ($_FILES["uploadedFile"]["error"] as $key => $error) {
-    	if ($error == UPLOAD_ERR_OK) {
-    		$tmp_name = $_FILES["uploadedFile"]["tmp_name"][$key];
+		if ($error == UPLOAD_ERR_OK) {
+			$tmp_name = $_FILES["uploadedFile"]["tmp_name"][$key];
 			$type = $_FILES["uploadedFile"]["type"][$key];
 
 			$name = $_FILES["uploadedFile"]["name"][$key];
@@ -157,6 +151,24 @@ $app->post('/fileupload', function () use ($app) {
 			$name = "upload-".microtime(true).".".$ext;
 			
 			move_uploaded_file($tmp_name, "$upload_dir/$name");
+
+			$info = new SplFileInfo("$upload_dir/$name");
+			
+			$t = new StdClass();
+			$t->filename = $info->getRealPath();
+			
+			$task = R::dispense('task');
+			$task->arguments = json_encode($t);
+			$task->created = R::isoDateTime();
+			$task->updated = R::isoDateTime();
+			$task->status = \Rescue\RequestStatus::QUEUE;
+			$task->type = \Rescue\RequestType::IMPORT;
+			$task_id = R::store($task);
+
+			\Rescue\RescueLogger::taskLog($task_id,\Monolog\Logger::INFO,'Created task import from '.$_SERVER['REMOTE_ADDR']);
+
+    	} else {
+    		$log->error('Errore upload file : '.$key.' -> '.$error);
     	}
     }
 
@@ -215,6 +227,9 @@ $app->post('/rescue/codicecensimento' , function () use ($app) {
 			$task->status = \Rescue\RequestStatus::QUEUE;
 			$task->type = \Rescue\RequestType::SEARCH;
 			$id = R::store($task);
+
+			\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,'Created task search from '.$_SERVER['REMOTE_ADDR']);
+
 			$app->response->setBody( json_encode(array('id_richiesta' => $id)) );
 		} catch(Exception $e) {
 			$app->log->error($e->getMessage());
