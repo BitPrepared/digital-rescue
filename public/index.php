@@ -226,11 +226,11 @@ $app->post('/rescue/codicecensimento' , function () use ($app) {
 			$task->updated = R::isoDateTime();
 			$task->status = \Rescue\RequestStatus::QUEUE;
 			$task->type = \Rescue\RequestType::SEARCH;
-			$id = R::store($task);
+			$task_id = R::store($task);
 
 			\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,'Created task search from '.$_SERVER['REMOTE_ADDR']);
 
-			$app->response->setBody( json_encode(array('id_richiesta' => $id)) );
+			$app->response->setBody( json_encode(array('id_richiesta' => $task_id)) );
 		} catch(Exception $e) {
 			$app->log->error($e->getMessage());
 			$app->halt(412,"Dati invalidi"); //Precondition Failed

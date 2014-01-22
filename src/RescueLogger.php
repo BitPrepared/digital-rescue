@@ -19,9 +19,43 @@ class RescueLogger {
 	
 
 	public static function taskLog($task_id,$level,$message) {
+
+		$level_text = $level;
+		if ( is_numeric($level) ) {
+			switch ($level) {
+				case \Slim\Log::EMERGENCY 	:
+					$level_text = "EMERGENCY";
+					break;
+				case \Slim\Log::ALERT 		:
+					$level_text = "ALERT";
+					break;
+				case \Slim\Log::CRITICAL		:
+					$level_text = "CRITICAL";
+					break;
+				case \Slim\Log::ERROR		:
+					$level_text = "ERROR";
+					break;
+				case \Slim\Log::WARN			:
+					$level_text = "WARNING";
+					break;
+				case \Slim\Log::NOTICE		:
+					$level_text = "NOTICE";
+					break;
+				case \Slim\Log::INFO			:
+					$level_text = "INFO";
+					break;
+				case \Slim\Log::DEBUG		:
+					$level_text = "DEBUG";
+					break;
+				default:	
+					$level_text = "WARNING";
+					break;
+			}
+		}
+
 		$tlog = R::dispense('tlog');
 		$tlog->task_id = $task_id;
-		$tlog->level = $level;
+		$tlog->level = $level_text;
 		$tlog->message = $message;
 		$id = R::store($tlog);
 		return $id;

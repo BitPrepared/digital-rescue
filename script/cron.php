@@ -129,11 +129,11 @@ foreach ($task_list as $task_id => $task) {
 		try {
 			$importer = new \BitPrepared\Asa\Importer();
 			$filename = $args->filename;
-			$soci_trovati = $importer->carica();
+			$soci_trovati = $importer->carica($filename);
 
 			$soci = $soci_trovati[0];
 			foreach ($soci as $cod_socio => $asa_socio) {
-				\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,'Import del codice socio '.$cod_socio);
+				$log->addDebug('Import del codice socio '.$cod_socio);
 				$find = R::findOne('asa',' csocio = ? ',array($cod_socio));
 				if ( null == $find ) {
 					$asa = R::dispense('asa');
@@ -153,8 +153,11 @@ foreach ($task_list as $task_id => $task) {
 
 			$task->status = \Rescue\RequestStatus::ELABORATED; 
 			$task->result = "Import del file $filename avvenuto correttamente";
+
+			rename($filename, $filename.'.ELABORATED');
 		} 
 		catch(Exception $e){
+			$message = $e->getMessage();
 			$log->addError($message);
 			$log->addError($e->getTraceAsString());
 			$task->result = "Fallito l'invio, errore nel trasporto";
@@ -166,6 +169,7 @@ foreach ($task_list as $task_id => $task) {
 	} // end import
 
 	R::store($task);
+	\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,'Task completato con stato : '.$task->status);
 
 }
 
