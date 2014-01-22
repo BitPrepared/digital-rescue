@@ -21,8 +21,6 @@ $password = $config['db']['password'];
 R::setup($dsn,$username,$password);
 R::freeze(true);
 
-$is_debug = $config['log']['level'] == 'DEBUG' ? true : false;
-
 $log_level = \Slim\Log::WARN;
 $log_enable = false;
 if ( isset($config['log']) ){
@@ -67,23 +65,38 @@ if ( isset($config['log']) ){
 	$log_enable = true;
 }
 
-$app = new \Slim\Slim();
+$app = new \Slim\Slim(array(
+	'mode' => $config['enviroment']
+));
 
 $app->config(array(
-    'debug' => $is_debug,
     'log.enabled' => $log_enable,
     'log.level' => $log_level,
     'log.writer' => $logger,
-    'templates.path' => $config['template_dir'],
+    'templates.path' => $config['template_dir']."/".$config['enviroment'],
     'title' => $config['title'],
     'import' => $config['import']
-    /*'oauth.cliendId' => 'r-index',
-    'oauth.secret' => 'testpass',
-    'oauth.url' => 'http://localhost:9000', */
 ));
 
+// Only invoked if mode is "production"
+$app->configureMode('production', function () use ($app) {
+    $app->config(array(
+        'debug' => false
+    ));
+});
+
+// Only invoked if mode is "development"
+$app->configureMode('development', function () use ($app) {
+    $app->config(array(
+	    /*'oauth.cliendId' => 'r-index',
+	    'oauth.secret' => 'testpass',
+	    'oauth.url' => 'http://localhost:9000', */
+        'debug' => true
+    ));
+});
+
 // error reporting 
-if ( $is_debug ) { ini_set('display_errors',1);error_reporting(E_ALL); }
+if ( DEBUG ) { ini_set('display_errors',1);error_reporting(E_ALL); }
 
 // handle GET requests for /
 $app->get('/', function () use ($app) {  
@@ -188,15 +201,20 @@ $app->post('/rescue/codicecensimento' , function () use ($app) {
 	if ( $find != null ) {
 		$app->log->debug('nome e cognome validi procedo con l\'inserimento della richiesta');
 		try {
-			$request = R::dispense('request');
-			$request->nome = $nome;
-			$request->cognome = $cognome;
-			$request->datanascita = $datanascita;
-			$request->luogonascita = $luogonascita;
-			$request->created = R::isoDateTime();
-			$request->updated = R::isoDateTime();
-			$request->status = RequestStatus::QUEUE;
-			$id = R::store($request);
+
+			$t = new StdClass();
+			$t->nome = $nome;
+			$t->cognome = $cognome;
+			$t->datanascita = $datanascita;
+			$t->luogonascita = $luogonascita;
+
+			$task = R::dispense('task');
+			$task->arguments = json_encode($t);
+			$task->created = R::isoDateTime();
+			$task->updated = R::isoDateTime();
+			$task->status = \Rescue\RequestStatus::QUEUE;
+			$task->type = \Rescue\RequestType::SEARCH;
+			$id = R::store($task);
 			$app->response->setBody( json_encode(array('id_richiesta' => $id)) );
 		} catch(Exception $e) {
 			$app->log->error($e->getMessage());

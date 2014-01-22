@@ -34,6 +34,7 @@
  
  * https://github.com/hipchat/hipchat-php
  * https://github.com/JacobBennett/SendyPHPLibrary (da usare per iscrivere/disiscrive a determinate newslist, prendere spunto da https://github.com/gellu/sendy-api)
+ * https://github.com/mjijackson/optionparser
 
 
 ### Struttura dati importazione
