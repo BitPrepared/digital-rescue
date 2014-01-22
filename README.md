@@ -1,4 +1,3 @@
-
 ### Funzioni
 
  * Ricerca codice censimento a partire da Nome,Cognome,DataNascita
@@ -37,23 +36,4 @@
  * https://github.com/mjijackson/optionparser
 
 
-### Struttura dati importazione
-
-
-| Posizione | Campo | Significato | Esempio |
-|:----------|:-----------|:------------|:-----|
-|0 |CSOCIO	|codice socio| 131231 |
-|1 |ORD		|??| 3300 |
-|2 |CUN		|??| G |
-|3 |COGNOME	|nome| prova | 
-|4 |NOME		|cognome| prova |
-|5 |INDIRIZZO	|indirizzo residenza| via pippo 15A | 
-|6 |CAP		|cap residenza| 47900 |
-|7 |RESIDENZA 	|citta residenza| Rimini |
-|8 |PROV 		|provincia di residenza| RN |
-|9 |DATAN		|data nascita | YYYYMMDD |
-|10|NASCITA	|luogo nascita|Roma |
-|11|FOCA		|codice formazione  | 5  |
-|12|TIPO		|???|E |
-|13|NUMERO		|email| esempio@esempip.it|
 
