@@ -8,12 +8,14 @@ var route = function($routeProvider) {
 	$routeProvider.when('/ricercacensimento', {templateUrl: 'partials/ricercacensimento.html', controller: 'RicercaController'});
 	$routeProvider.when('/lostpassword', {templateUrl: 'partials/lostpassword.html', controller: 'ProfileController'});
 	
+	$routeProvider.when('/upload-asa', {templateUrl: 'partials/uploadasa.html', controller: 'AdminController'});
+
 	$routeProvider.otherwise({redirectTo: '/home'});
 }
 
 // Declare app level module which depends on filters, and services
 var rescueApp = angular
-		.module('rescueApp', ['ngRoute','ui.bootstrap','http-auth-interceptor','ngIdle'])
+		.module('rescueApp', ['ngRoute','ui.bootstrap','http-auth-interceptor','ngIdle','angularFileUpload'])
 		.config(['$routeProvider', route])
 		.config(['$keepaliveProvider', '$idleProvider', function($keepaliveProvider, $idleProvider) {
 				  $idleProvider.idleDuration(50000); // DA CONFIGURARE

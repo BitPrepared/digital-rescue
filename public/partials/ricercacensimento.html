@@ -37,7 +37,22 @@
 				</div>
 			</div>
 
+
 			<!-- Text input-->
+			<div class="form-group">
+				<label class="control-label" for="asyncSelected">Luogo di Nascita</label>
+				<div class="controls">
+
+					<input type="text" ng-model="asyncSelected" placeholder="Luogo di nascita" typeahead-min-length="3" required typeahead="address for address in getLocation($viewValue) | filter:$viewValue" typeahead-loading="loadingLocations" class="form-control">
+					<i ng-show="loadingLocations" class="glyphicon glyphicon-refresh"></i>
+
+					<p class="help-block">Luogo Nascita Associato</p>
+
+				</div>
+			</div>
+
+			<!-- Text input-->
+			<!--
 			<div class="form-group">
 				<label class="control-label" for="email">Email</label>
 				<div class="controls">
@@ -45,6 +60,7 @@
 					<p class="help-block">Email Associato</p>
 				</div>
 			</div>
+			-->
 
 			<p id="error-msg"></p>
 

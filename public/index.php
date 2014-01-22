@@ -4,6 +4,16 @@ require '../vendor/autoload.php';
 require '../config.php';
 use RedBean_Facade as R;
 
+class ResourceNotFoundException extends Exception {}
+
+class RequestStatus
+{
+    const QUEUE = "QUEUE";
+    const IN_PROCESS = "IN_PROCESS";
+    const FAILED = "FAILED";
+    const ELABORATED = "ELABORATED";
+}
+
 $dsn      = 'mysql:host='.$config['db']['host'].';dbname='.$config['db']['database'];
 $username = $config['db']['user'];
 $password = $config['db']['password'];
@@ -11,40 +21,75 @@ $password = $config['db']['password'];
 R::setup($dsn,$username,$password);
 R::freeze(true);
 
-$logger = new \Flynsarmy\SlimMonolog\Log\MonologWriter(array(
-    'handlers' => array(
-        new \Monolog\Handler\StreamHandler('../logs/'.date('Y-m-d').'.log'),
-    ),
-));
+$is_debug = $config['log']['level'] == 'DEBUG' ? true : false;
+
+$log_level = \Slim\Log::WARN;
+$log_enable = false;
+if ( isset($config['log']) ){
+	$handlers = array();
+	if ( isset($config['log']['hipchat']) ) {
+		$hipchat = $config['log']['hipchat'];
+		$handlers[] = new \Monolog\Handler\HipChatHandler($hipchat['token'], $hipchat['room'], $hipchat['name'], $hipchat['notify'], \Monolog\Logger::INFO, $hipchat['bubble'], $hipchat['useSSL']);
+	}
+	$handlers[] = new \Monolog\Handler\StreamHandler($config['log']['filename']);	
+	$logger = new \Flynsarmy\SlimMonolog\Log\MonologWriter(array(
+	    'handlers' => $handlers
+	));
+	switch ($config['log']['level']) {
+		case "EMERGENCY" 	:
+			$log_level = \Slim\Log::EMERGENCY;
+			break;
+		case "ALERT" 		:
+			$log_level = \Slim\Log::ALERT;
+			break;
+		case "CRITICAL"		:
+			$log_level = \Slim\Log::CRITICAL;
+			break;
+		case "ERROR"		:
+			$log_level = \Slim\Log::ERROR;
+			break;
+		case "WARN"			:
+			$log_level = \Slim\Log::WARN;
+			break;
+		case "NOTICE"		:
+			$log_level = \Slim\Log::NOTICE;
+			break;
+		case "INFO"			:
+			$log_level = \Slim\Log::INFO;
+			break;
+		case "DEBUG"		:
+			$log_level = \Slim\Log::DEBUG;
+			break;
+		default:	
+			$log_level = \Slim\Log::WARN;
+			break;
+	}
+	$log_enable = true;
+}
 
 $app = new \Slim\Slim();
 
 $app->config(array(
-    //'debug' => true,
-    'log.enabled' => true,
-    'log.level' => \Slim\Log::DEBUG,
+    'debug' => $is_debug,
+    'log.enabled' => $log_enable,
+    'log.level' => $log_level,
     'log.writer' => $logger,
-    'templates.path' => '../templates/',
-    'oauth.cliendId' => 'r-index',
+    'templates.path' => $config['template_dir'],
+    'title' => $config['title'],
+    'import' => $config['import']
+    /*'oauth.cliendId' => 'r-index',
     'oauth.secret' => 'testpass',
-    'oauth.url' => 'http://localhost:9000',
-    'title' => $config['title']
+    'oauth.url' => 'http://localhost:9000', */
 ));
 
 // error reporting 
-ini_set('display_errors',1);error_reporting(E_ALL);
-
-//Enable logging
-$app->log->setEnabled(true);
-
-class ResourceNotFoundException extends Exception {}
+if ( $is_debug ) { ini_set('display_errors',1);error_reporting(E_ALL); }
 
 // handle GET requests for /
 $app->get('/', function () use ($app) {  
 
-	$log = $app->log;
-
-	$log->debug('called /');
+	//$log = $app->log;
+	//$log->debug('called /');
 
 	$title = $app->config('title');
 
@@ -54,6 +99,115 @@ $app->get('/', function () use ($app) {
 	));
 
 });
+
+$app->get('/location', function () use ($app) {  
+	
+	$app->response->headers->set('Content-Type', 'application/json');
+
+	$location = $app->request->params('location');
+
+	$elenco_luoghi = R::getCol('select distinct nascita from asa where nascita like "'.$location.'%" order by nascita ASC');
+	foreach($elenco_luoghi as &$value2)
+	{
+	    $value2 = ucwords(strtolower($value2));
+	}
+	unset($value2); # remove the alias for safety reasons.
+	/*
+	 Array
+	    (
+	        [0] => Abbiategrasso
+	        [1] => ..
+	        [2] => ..
+	    )
+	*/
+	$t = new StdClass();
+	$t->results = $elenco_luoghi;
+	$app->response->setBody( json_encode(  $t ) );
+
+});
+
+$app->post('/fileupload', function () use ($app) {  
+
+	$import = $app->config('import');
+	$upload_dir = $import['upload_dir'];
+
+	foreach ($_FILES["uploadedFile"]["error"] as $key => $error) {
+    	if ($error == UPLOAD_ERR_OK) {
+    		$tmp_name = $_FILES["uploadedFile"]["tmp_name"][$key];
+			$type = $_FILES["uploadedFile"]["type"][$key];
+
+			$name = $_FILES["uploadedFile"]["name"][$key];
+			$ext = pathinfo($name, PATHINFO_EXTENSION);
+
+			//$objDateTime = new DateTime('NOW');
+			//$name = "upload-".$objDateTime->format(DateTime::W3C).".".$ext;
+			$name = "upload-".microtime(true).".".$ext;
+			
+			move_uploaded_file($tmp_name, "$upload_dir/$name");
+    	}
+    }
+
+	$app->response->headers->set('Content-Type', 'text/html');
+	$app->response->setBody('Upload completato con successo');
+
+});
+
+/*
+$app->get('/rescue' , function () use ($app) {  
+
+	//check $app->halt(401,"REMOTE SITE STOP ME! -> $http_status");
+
+	$app->response->headers->set('Content-Type', 'application/json');
+
+});
+*/
+
+$app->post('/rescue/codicecensimento' , function () use ($app) {  
+
+	$app->response->headers->set('Content-Type', 'application/json');
+
+	/*$req = $app->request();
+	$name_of_the_controller = $req->post('controller');
+	$name_of_the_action =  $req->post('action');*/
+
+	$body = $app->request->getBody();
+	$app->log->debug('Richiesta ricerca codicecensimento ' . $body);
+
+	$obj_request = json_decode($body);
+
+	$nome = $obj_request->nome;
+	$cognome = $obj_request->cognome;
+
+	$datanascita = $obj_request->datanascita; //1981-09-18T23:22:51.000Z
+
+	$datetime = new DateTime($datanascita);
+	$datanascita = $datetime->format('Ymd'); //19810918
+	$luogonascita = $obj_request->luogonascita;
+
+	$find = R::findOne('asa',' nome = ? and cognome = ? ',array($nome,$cognome));
+	if ( $find != null ) {
+		$app->log->debug('nome e cognome validi procedo con l\'inserimento della richiesta');
+		try {
+			$request = R::dispense('request');
+			$request->nome = $nome;
+			$request->cognome = $cognome;
+			$request->datanascita = $datanascita;
+			$request->luogonascita = $luogonascita;
+			$request->created = R::isoDateTime();
+			$request->updated = R::isoDateTime();
+			$request->status = RequestStatus::QUEUE;
+			$id = R::store($request);
+			$app->response->setBody( json_encode(array('id_richiesta' => $id)) );
+		} catch(Exception $e) {
+			$app->log->error($e->getMessage());
+			$app->halt(412,"Dati invalidi"); //Precondition Failed
+		}
+	} else {
+		$app->halt(412,"Nome e/o Cognomi invalidi"); //Precondition Failed
+	}
+
+});
+
 
 // run
 $app->run();

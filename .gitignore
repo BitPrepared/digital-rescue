@@ -3,6 +3,7 @@
 # directory
 logs
 vendor
+uploads
 
 # files
 composer.lock

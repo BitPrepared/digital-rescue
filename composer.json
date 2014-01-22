@@ -1,4 +1,7 @@
 {
+    "autoload": {
+        "psr-4": { "BitPrepared\\": "src/BitPrepared/" }
+    },
 	"repositories": [
         {
             "type": "git",
