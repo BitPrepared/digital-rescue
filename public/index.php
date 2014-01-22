@@ -17,7 +17,7 @@ $log_level = \Slim\Log::WARN;
 $log_enable = false;
 if ( isset($config['log']) ){
 	$handlers = array();
-	if ( isset($config['log']['hipchat']) ) {
+	if ( $config['enviroment'] == 'production' && isset($config['log']['hipchat']) ) {
 		$hipchat = $config['log']['hipchat'];
 		$handlers[] = new \Monolog\Handler\HipChatHandler($hipchat['token'], $hipchat['room'], $hipchat['name'], $hipchat['notify'], \Monolog\Logger::INFO, $hipchat['bubble'], $hipchat['useSSL']);
 	}

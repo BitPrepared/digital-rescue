@@ -17,6 +17,12 @@ $log = new Logger('cron');
 $handler = new TestHandler(Logger::WARNING);
 $log->pushHandler($handler);
 
+if ( $config['enviroment'] == 'production' && isset($config['log']['hipchat']) ) {
+	$hipchat = $config['log']['hipchat'];
+	$hipchat_handler = new \Monolog\Handler\HipChatHandler($hipchat['token'], $hipchat['room'], $hipchat['name'], $hipchat['notify'], \Monolog\Logger::ERROR, $hipchat['bubble'], $hipchat['useSSL']);
+	$log->pushHandler($hipchat_handler);
+}
+
 // add records to the log
 //$log->addWarning('Foo');
 //$log->addError('Bar');
@@ -122,7 +128,8 @@ foreach ($task_list as $task_id => $task) {
 
 		try {
 			$importer = new \BitPrepared\Asa\Importer();
-			$soci_trovati = $importer->carica($args->filename);
+			$filename = $args->filename;
+			$soci_trovati = $importer->carica();
 
 			$soci = $soci_trovati[0];
 			foreach ($soci as $cod_socio => $asa_socio) {
@@ -184,7 +191,7 @@ $log_records = $handler->getRecords();
 	}
 */
 foreach ($log_records as $record) {
-	\Rescue\RescueLogger::taskLog($task_id,$record['level'],$record['formatted']);
+	\Rescue\RescueLogger::taskLog($task_id,$record['level_name'],$record['formatted']);
 }
 
 
