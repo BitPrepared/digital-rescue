@@ -1,14 +1,35 @@
 <?php
-
+define('DEBUG',false);
 $config = array(
+    'enviroment' => 'production',
+    'log' => array(
+        'filename' => '../resources/logs/'.date('Y-m-d').'.log',
+        'hipchat' => array(
+        'token' => '',
+        'room' => '',
+        'name' => '',
+        'notify' => false,
+        'bubble' => true, //Whether the messages that are handled can bubble up the stack or not
+        'useSSL' => true
+        ),
+        'level' => 'DEBUG'
+    ),
     'db' => array(
         'user' => 'username db',
         'password' => 'password db',
         'host' => '127.0.0.1 o localhost o hostname',
         'database' => 'database name'
     ),
-    'title' => 'Titolo del portale'
+    'smtp' => array(
+        'host' => 'smtp.host.com',
+        'port' => 25,
+        'security' => null, //ssl,tls,null
+        'username' => '',
+        'password' => ''
+    ),
+    'title' => 'Titolo del portale',
+    'template_dir' => '../resources/templates/',
+    'import' => array(
+        'upload_dir' => '../resources/uploads/'
+    )
 );
-
-
-?>

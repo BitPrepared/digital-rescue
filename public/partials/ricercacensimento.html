@@ -25,19 +25,33 @@
 			</div>
 
 			<!-- Text input-->
-			<div class="form-group">
+			<div class="form-group" ng-class="{'has-error': datepickerForm.date.$invalid}">
 				<label class="control-label" for="datanascita">Data di Nascita</label>
 				<div class="controls">
 
+					<!-- http://mgcrea.github.io/angular-strap/##datepickers -->
+					<input type="text" class="form-control" ng-model="selectedDate" name="date" bs-datepicker>
+					<p class="help-block">Data di Nascita Associato (usa il datapicker per un corretto funzionamento)</p>
 
-					<input id="datanascita" name="datanascita" type="text" class="form-control input-sm" datepicker-popup="dd/MM/yyyy" required ng-model="dt" is-open="opened" show-button-bar="false" datepicker-options="dateOptions" show-weeks="false" date-disabled="disabled(date, mode)" ng-required="true" close-text="Close" />
+				</div>
+			</div>
 
-					<p class="help-block">Data di Nascita Associato</p>
+
+			<!-- Text input-->
+			<div class="form-group">
+				<label class="control-label" for="asyncSelected">Luogo di Nascita</label>
+				<div class="controls">
+
+					<input type="text" ng-model="asyncSelected" placeholder="Luogo di nascita" typeahead-min-length="1" required typeahead="address for address in getLocation($viewValue) | filter:$viewValue" typeahead-loading="loadingLocations" class="form-control">
+					<i ng-show="loadingLocations" class="glyphicon glyphicon-refresh"></i>
+
+					<p class="help-block">Luogo Nascita Associato (seleziona dall'elenco a comparsa dopo la prima lettera la citt&agrave;)</p>
 
 				</div>
 			</div>
 
 			<!-- Text input-->
+			<!--
 			<div class="form-group">
 				<label class="control-label" for="email">Email</label>
 				<div class="controls">
@@ -45,6 +59,7 @@
 					<p class="help-block">Email Associato</p>
 				</div>
 			</div>
+			-->
 
 			<p id="error-msg"></p>
 
