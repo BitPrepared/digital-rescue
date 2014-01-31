@@ -5,6 +5,7 @@ date_default_timezone_set('Europe/Rome');
 require '../vendor/autoload.php';
 require '../config.php';
 use RedBean_Facade as R;
+use \stdClass;
 
 class ResourceNotFoundException extends Exception {}
 
@@ -114,6 +115,91 @@ $app->configureMode('development', function () use ($app) {
 // error reporting 
 if ( DEBUG ) { ini_set('display_errors',1);error_reporting(E_ALL); }
 
+
+
+
+// OAUTH autentication 
+// API group (Es: GET /api/asa/user/:id )
+$app->group('/api', function () use ($app) {
+
+    // Library group
+    $app->group('/asa', function () use ($app) {
+
+        // Get user with ID
+        $app->get('/user/:id', function ($id) {
+
+        });
+
+        // Create user with ID
+        $app->post('/user', function () {
+
+        });
+
+        // Update user with ID
+        $app->put('/user/:id', function ($id) {
+
+        });
+
+        // Delete user with ID
+        $app->delete('/user/:id', function ($id) {
+
+        });
+
+    });
+
+});
+
+
+
+
+
+
+
+// menu 
+$app->get('/menu', function () use ($app) {  
+
+
+	$app->response->headers->set('Content-Type', 'application/json');
+
+	$menuList = new stdClass;
+	$menu = array();
+	
+	$menu[] = \Rescue\RescueMenuItem::createMenuItem('Homepage','/home','HomeController','partials/home.html');
+
+	// da portare a unico controller in futuro
+	$menu[] = \Rescue\RescueMenuItem::createMenuItem('Login','/login','LoginController','partials/login.html');
+	$menu[] = \Rescue\RescueMenuItem::createMenuItem('Login','/logout','LogoutController','partials/logout.html');
+	$menu[] = \Rescue\RescueMenuItem::createMenuItem('Recupera password','/lostpassword','ProfileController','partials/lostpassword.html');
+
+	// da portare a unico controller in futuro
+	$menu[] = \Rescue\RescueMenuItem::createMenuItem('Profilo Utente','/profilo','ProfileController','partials/profilo.html');
+	$menu[] = \Rescue\RescueMenuItem::createMenuItem('Trova codice censimento','/ricercacensimento','RicercaController','partials/ricercacensimento.html');
+	
+	// qui solo se si ha il ruolo giusto
+	$menu[] = \Rescue\RescueMenuItem::createMenuItem('Carica ASA','/upload-asa','AdminController','partials/uploadasa.html');
+	
+	$menuList->menu = $menu;
+
+	//$menu[] = \Rescue\RescueMenuItem::createMenuItem('','/','','');
+	/*
+	$menu->Path = ;
+	$menu->Controller = ;
+	$menu->TemplateUrl = ;
+	$menu->Title = ;
+	*/
+
+	$app->response->setBody( json_encode(  $menuList ) );
+
+});
+
+
+
+
+
+
+
+
+
 // handle GET requests for /
 $app->get('/', function () use ($app) {  
 
@@ -128,16 +214,6 @@ $app->get('/', function () use ($app) {
 	));
 
 });
-
-if ( DEBUG ) {
-	$app->get('/version', function () use ($app) {  
-
-		$app->response->headers->set('Content-Type', 'text/html');
-		$info = decodeInfoPhp();
-		$app->response->setBody( $info['phpinfo'][0] );
-
-	});
-}
 
 $app->get('/location', function () use ($app) {  
 	
@@ -159,55 +235,9 @@ $app->get('/location', function () use ($app) {
 	        [2] => ..
 	    )
 	*/
-	$t = new StdClass();
+	$t = new stdClass;
 	$t->results = $elenco_luoghi;
 	$app->response->setBody( json_encode(  $t ) );
-
-});
-
-$app->post('/fileupload', function () use ($app) {  
-
-	$log = $app->log;
-
-	$import = $app->config('import');
-	$upload_dir = $import['upload_dir'];
-
-	foreach ($_FILES["uploadedFile"]["error"] as $key => $error) {
-		if ($error == UPLOAD_ERR_OK) {
-			$tmp_name = $_FILES["uploadedFile"]["tmp_name"][$key];
-			$type = $_FILES["uploadedFile"]["type"][$key];
-
-			$name = $_FILES["uploadedFile"]["name"][$key];
-			$ext = pathinfo($name, PATHINFO_EXTENSION);
-
-			//$objDateTime = new DateTime('NOW');
-			//$name = "upload-".$objDateTime->format(DateTime::W3C).".".$ext;
-			$name = "upload-".microtime(true).".".$ext;
-			
-			move_uploaded_file($tmp_name, "$upload_dir/$name");
-
-			$info = new SplFileInfo("$upload_dir/$name");
-			
-			$t = new StdClass();
-			$t->filename = $info->getRealPath();
-			
-			$task = R::dispense('task');
-			$task->arguments = json_encode($t);
-			$task->created = R::isoDateTime();
-			$task->updated = R::isoDateTime();
-			$task->status = \Rescue\RequestStatus::QUEUE;
-			$task->type = \Rescue\RequestType::IMPORT;
-			$task_id = R::store($task);
-
-			\Rescue\RescueLogger::taskLog($task_id,\Monolog\Logger::INFO,'Created task import from '.$_SERVER['REMOTE_ADDR']);
-
-    	} else {
-    		$log->error('Errore upload file : '.$key.' -> '.$error);
-    	}
-    }
-
-	$app->response->headers->set('Content-Type', 'text/html');
-	$app->response->setBody('Upload completato con successo');
 
 });
 
@@ -239,7 +269,7 @@ $app->post('/rescue/codicecensimento' , function () use ($app) {
 		$app->log->debug('nome e cognome validi procedo con l\'inserimento della richiesta');
 		try {
 
-			$t = new StdClass();
+			$t = new stdClass;
 			$t->nome = $nome;
 			$t->cognome = $cognome;
 			$t->datanascita = $datanascita;
@@ -266,6 +296,65 @@ $app->post('/rescue/codicecensimento' , function () use ($app) {
 	}
 
 });
+
+// BASIC Autentication (two factor?)
+
+$app->post('/fileupload', function () use ($app) {  
+
+	$log = $app->log;
+
+	$import = $app->config('import');
+	$upload_dir = $import['upload_dir'];
+
+	foreach ($_FILES["uploadedFile"]["error"] as $key => $error) {
+		if ($error == UPLOAD_ERR_OK) {
+			$tmp_name = $_FILES["uploadedFile"]["tmp_name"][$key];
+			$type = $_FILES["uploadedFile"]["type"][$key];
+
+			$name = $_FILES["uploadedFile"]["name"][$key];
+			$ext = pathinfo($name, PATHINFO_EXTENSION);
+
+			//$objDateTime = new DateTime('NOW');
+			//$name = "upload-".$objDateTime->format(DateTime::W3C).".".$ext;
+			$name = "upload-".microtime(true).".".$ext;
+			
+			move_uploaded_file($tmp_name, "$upload_dir/$name");
+
+			$info = new SplFileInfo("$upload_dir/$name");
+			
+			$t = new stdClass;
+			$t->filename = $info->getRealPath();
+			
+			$task = R::dispense('task');
+			$task->arguments = json_encode($t);
+			$task->created = R::isoDateTime();
+			$task->updated = R::isoDateTime();
+			$task->status = \Rescue\RequestStatus::QUEUE;
+			$task->type = \Rescue\RequestType::IMPORT;
+			$task_id = R::store($task);
+
+			\Rescue\RescueLogger::taskLog($task_id,\Monolog\Logger::INFO,'Created task import from '.$_SERVER['REMOTE_ADDR']);
+
+    	} else {
+    		$log->error('Errore upload file : '.$key.' -> '.$error);
+    	}
+    }
+
+	$app->response->headers->set('Content-Type', 'text/html');
+	$app->response->setBody('Upload completato con successo');
+
+});
+
+
+if ( DEBUG ) {
+	$app->get('/version', function () use ($app) {  
+
+		$app->response->headers->set('Content-Type', 'text/html');
+		$info = decodeInfoPhp();
+		$app->response->setBody( $info['phpinfo'][0] );
+
+	});
+}
 
 
 // run

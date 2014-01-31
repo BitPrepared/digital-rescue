@@ -73,17 +73,17 @@ rescueApp.controller('RicercaController' , function RicercaController($scope,$mo
 							richiesta.luogonascita = "";
 					    	$modalInstance.close();
 
-                        }).error(function(error){
+                }).error(function(error){
 
-                        	alert(error);
-                        	richiesta.nome = "";
-							richiesta.cognome = "";
-							richiesta.datanascita = "";
-							richiesta.luogonascita = "";
-					    	$modalInstance.close();
+                	alert(error);
+                	richiesta.nome = "";
+					richiesta.cognome = "";
+					richiesta.datanascita = "";
+					richiesta.luogonascita = "";
+			    	$modalInstance.close();
 
-                        	//console.log(error);
-                        });
+                	//console.log(error);
+                });
 
 
 				/*$http.post('/rescue/codicecensimento').success(function($data) {
