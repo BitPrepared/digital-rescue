@@ -1,5 +1,7 @@
 <?php
 
+define('UNIQUE_SALT', '3nR1c?2');
+
 date_default_timezone_set('Europe/Rome');
 
 require '../vendor/autoload.php';
@@ -202,6 +204,9 @@ $app->get('/menu', function () use ($app) {
 
 // handle GET requests for /
 $app->get('/', function () use ($app) {  
+
+
+	
 
 	//$log = $app->log;
 	//$log->debug('called /');

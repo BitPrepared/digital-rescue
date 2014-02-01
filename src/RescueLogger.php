@@ -3,6 +3,7 @@
 namespace Rescue;
 
 use RedBean_Facade as R;
+use Monolog\Logger;
 
 class RescueLogger
 {
@@ -12,6 +13,7 @@ class RescueLogger
         $history->recall_url = $srcUrl;
         $history->recall_param = $srcParam;
         $history->description = $message;
+        $history->raddress = \BitPrepared\Security\IpIdentifier::get_ip_address();
         $history->created_by = $creatorId;
         $history->created_at = R::isoDateTime();
         $id = R::store($history);
@@ -19,33 +21,34 @@ class RescueLogger
         return $id;
     }
 
-    public static function taskLog($task_id,$level,$message)
+    public static function taskLog($task_id,$level,$message,$creatorId = 0,$creationDate = "")
     {
-        $level_text = $level;
+        $level_text = "";
+        if ( "" == $creationDate ) $creationDate = R::isoDateTime();
         if ( is_numeric($level) ) {
             switch ($level) {
-                case \Slim\Log::EMERGENCY 	:
+                case Logger::EMERGENCY 	:
                     $level_text = "EMERGENCY";
                     break;
-                case \Slim\Log::ALERT 		:
+                case Logger::ALERT 		:
                     $level_text = "ALERT";
                     break;
-                case \Slim\Log::CRITICAL		:
+                case Logger::CRITICAL		:
                     $level_text = "CRITICAL";
                     break;
-                case \Slim\Log::ERROR		:
+                case Logger::ERROR		:
                     $level_text = "ERROR";
                     break;
-                case \Slim\Log::WARN			:
+                case Logger::WARNING			:
                     $level_text = "WARNING";
                     break;
-                case \Slim\Log::NOTICE		:
+                case Logger::NOTICE		:
                     $level_text = "NOTICE";
                     break;
-                case \Slim\Log::INFO			:
+                case Logger::INFO			:
                     $level_text = "INFO";
                     break;
-                case \Slim\Log::DEBUG		:
+                case Logger::DEBUG		:
                     $level_text = "DEBUG";
                     break;
                 default:
@@ -58,6 +61,8 @@ class RescueLogger
         $tlog->task_id = $task_id;
         $tlog->level = $level_text;
         $tlog->message = $message;
+        $tlog->created = $creationDate;
+        $tlog->author = $creatorId;
         $id = R::store($tlog);
 
         return $id;

@@ -195,7 +195,8 @@ $log_records = $handler->getRecords();
 	}
 */
 foreach ($log_records as $record) {
-	\Rescue\RescueLogger::taskLog($task_id,$record['level_name'],$record['formatted']);
+	$level = constant('\Monolog\Logger::'. $record['level_name']);
+	\Rescue\RescueLogger::taskLog($task_id, $level ,$record['message'],0,$record['datetime']);
 }
 
 
