@@ -4,6 +4,10 @@ define('UNIQUE_SALT', '3nR1c?2');
 
 date_default_timezone_set('Europe/Rome');
 
+session_cache_limiter(false);
+
+session_start();
+
 require '../vendor/autoload.php';
 require '../config.php';
 use RedBean_Facade as R;
@@ -11,7 +15,7 @@ use \stdClass;
 
 class ResourceNotFoundException extends Exception {}
 
-$dsn      = 'mysql:host='.$config['db']['host'].';dbname='.$config['db']['database'];
+$dsn      = $config['db']['type'].':host='.$config['db']['host'].';dbname='.$config['db']['database'];
 $username = $config['db']['user'];
 $password = $config['db']['password'];
 
@@ -94,7 +98,9 @@ $app->config(array(
     'log.writer' => $logger,
     'templates.path' => $config['template_dir']."/".$config['enviroment'],
     'title' => $config['title'],
-    'import' => $config['import']
+    'import' => $config['import'],
+    'cookies.lifetime' => $config['cookies.lifetime'],
+    'security.salt' => $config['security.salt']
 ));
 
 // Only invoked if mode is "production"
@@ -152,13 +158,45 @@ $app->group('/api', function () use ($app) {
 });
 
 
+// route middleware for simple API authentication
+function authenticate(\Slim\Route $route) {
+    $app = \Slim\Slim::getInstance();
 
+    
+    //$token = $app->request->get('X-ACCESS-TOKEN');
+    //$scope = $app->request->get('X-ACCESS-SCOPE');
+    //$request->headers['AUTHORIZATION'] = $token;
+    //$uid = $app->getEncryptedCookie('uid');
+    //$key = $app->getEncryptedCookie('key');
 
+    $secHash = new \BitPrepared\Security\SecureHash();
 
+    $password = $_SERVER['HTTP_USER_AGENT'];
+    $identifiedIp = \BitPrepared\Security\IpIdentifier::get_ip_address();
+    $password .= $identifiedIp;
+	$password .= $app->config('security.salt');
 
+	if ( isset($_SESSION['salt']) ) {
+		$salt = $_SESSION['salt'];
+		$hashed_pass = $app->getEncryptedCookie('fingerprint');
+		if ( !$secHash->validate_hash($password, $hashed_pass, $salt) ) {
+			echo 'ERRORE';
+			exit;
+			// DA GESITRE
+		}
+
+	} 
+	
+	$salt = ''; //reset
+	$fingerprint = $secHash->create_hash($password,$salt);
+	$_SESSION['salt'] = $salt;
+	$app->setEncryptedCookie('fingerprint',$fingerprint);
+	
+
+}
 
 // menu 
-$app->get('/menu', function () use ($app) {  
+$app->get('/menu', 'authenticate', function () use ($app) {  
 
 
 	$app->response->headers->set('Content-Type', 'application/json');
@@ -203,10 +241,7 @@ $app->get('/menu', function () use ($app) {
 
 
 // handle GET requests for /
-$app->get('/', function () use ($app) {  
-
-
-	
+$app->get('/', 'authenticate', function () use ($app) {  
 
 	//$log = $app->log;
 	//$log->debug('called /');
@@ -215,12 +250,12 @@ $app->get('/', function () use ($app) {
 
 	$app->render('index.html', array(
 		'title' => $title,
-		'footerText' => '©2014 Stefano Tamagnini. Design by ....'
+		'footerText' => '&copy;2014 Stefano Tamagnini. Design by ....'
 	));
 
 });
 
-$app->get('/location', function () use ($app) {  
+$app->get('/location', 'authenticate',  function () use ($app) {  
 	
 	$app->response->headers->set('Content-Type', 'application/json');
 
@@ -302,9 +337,12 @@ $app->post('/rescue/codicecensimento' , function () use ($app) {
 
 });
 
+
+
+
 // BASIC Autentication (two factor?)
 
-$app->post('/fileupload', function () use ($app) {  
+$app->post('/fileupload', 'authenticate',  function () use ($app) {  
 
 	$log = $app->log;
 
