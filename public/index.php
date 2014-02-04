@@ -123,7 +123,26 @@ $app->configureMode('development', function () use ($app) {
 // error reporting 
 if ( DEBUG ) { ini_set('display_errors',1);error_reporting(E_ALL); }
 
+$app->hook('slim.before.router', function () use ($app) {
+    
+	$req = $app->request;
 
+	$allGetVars = $req->get();
+	$allPostVars = $req->post();
+	$allPutVars = $req->put();
+
+	$vars = array_merge($allGetVars,$allPostVars);
+	$vars = array_merge($vars,$allPutVars);
+
+	$srcParam = json_encode($vars);
+
+	//$req->getRootUri()
+	$srcUrl = $req->getResourceUri();
+	//Kint::dump( $srcUrl );
+
+    \Rescue\RescueLogger::addHistory($srcUrl,$srcParam,"slim.before.router");
+
+});
 
 
 // OAUTH autentication 
@@ -250,6 +269,7 @@ $app->get('/', 'authenticate', function () use ($app) {
 
 	$app->render('index.html', array(
 		'title' => $title,
+		'baseUrl' => $app->request->getRootUri().'/',
 		'footerText' => '&copy;2014 Stefano Tamagnini. Design by ....'
 	));
 
