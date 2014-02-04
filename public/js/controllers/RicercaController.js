@@ -29,13 +29,14 @@ rescueApp.controller('RicercaController' , function RicercaController($scope,$mo
 	$scope.cerca = function() {
 
 		//$scope.richiesta.datanascita = $scope.dt.toJSON();
-
 		$scope.richiesta.datanascita = $scope.selectedDate;
 		$scope.richiesta.luogonascita = $scope.asyncSelected;
 
 		// Modal Info: http://stackoverflow.com/questions/19200525/bootstrap-3-modal-in-html5mode-in-angularjs
 		var ModalInstanceCtrl = function ($scope, $http, $modalInstance, richiesta) {
 			
+			$scope.buttonConfirmChecked = false;
+
 			$scope.richiesta = richiesta;
 			//$scope.dateN = richiesta.datanascita;
 			//console.log($scope.dateN);
@@ -43,6 +44,9 @@ rescueApp.controller('RicercaController' , function RicercaController($scope,$mo
 			//console.log($scope.richiesta.datanascita);
 
 			$scope.confirm = function () {
+
+				//devo disabilitare il pulsante 
+				$scope.buttonConfirmChecked = true;
 
 				console.log(JSON.stringify($scope.richiesta));
 				//+'00:00:00.000Z'
