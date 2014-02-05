@@ -199,7 +199,7 @@ function authenticate(\Slim\Route $route) {
 		$salt = $_SESSION['salt'];
 		$hashed_pass = $app->getEncryptedCookie('fingerprint');
 		if ( !$secHash->validate_hash($password, $hashed_pass, $salt) ) {
-			echo 'ERRORE';
+			echo 'Attenzione: svuotare la cache del browser prima di proseguire, anomalia individuata al suo interno.';
 			exit;
 			// DA GESITRE
 		}
