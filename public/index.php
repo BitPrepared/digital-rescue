@@ -10,6 +10,10 @@ session_start();
 
 require '../vendor/autoload.php';
 require '../config.php';
+
+// error reporting 
+if ( DEBUG ) { ini_set('display_errors',1);error_reporting(E_ALL); }
+
 use RedBean_Facade as R;
 use \stdClass;
 
@@ -120,9 +124,6 @@ $app->configureMode('development', function () use ($app) {
     ));
 });
 
-// error reporting 
-if ( DEBUG ) { ini_set('display_errors',1);error_reporting(E_ALL); }
-
 $app->hook('slim.before.router', function () use ($app) {
     
 	$req = $app->request;
@@ -180,7 +181,7 @@ $app->group('/api', function () use ($app) {
 // route middleware for simple API authentication
 function authenticate(\Slim\Route $route) {
     $app = \Slim\Slim::getInstance();
-
+	$log = $app->log;
     
     //$token = $app->request->get('X-ACCESS-TOKEN');
     //$scope = $app->request->get('X-ACCESS-SCOPE');
@@ -197,8 +198,9 @@ function authenticate(\Slim\Route $route) {
 
 	if ( isset($_SESSION['salt']) ) {
 		$salt = $_SESSION['salt'];
-		$hashed_pass = $app->getEncryptedCookie('fingerprint');
-		if ( !$secHash->validate_hash($password, $hashed_pass, $salt) ) {
+		$cookie_fingerprint = $app->getEncryptedCookie('fingerprint');
+		$app->log->debug("check ".$cookie_fingerprint." with ".$password);
+		if ( !$secHash->validate_hash($password, $cookie_fingerprint, $salt) ) {
 			echo 'Attenzione: svuotare la cache del browser prima di proseguire, anomalia individuata al suo interno.';
 			exit;
 			// DA GESITRE
@@ -210,13 +212,13 @@ function authenticate(\Slim\Route $route) {
 	$fingerprint = $secHash->create_hash($password,$salt);
 	$_SESSION['salt'] = $salt;
 	$app->setEncryptedCookie('fingerprint',$fingerprint);
+	$app->log->debug("new fingerprint ".$fingerprint);
 	
 
 }
 
 // menu 
 $app->get('/menu', 'authenticate', function () use ($app) {  
-
 
 	$app->response->headers->set('Content-Type', 'application/json');
 
