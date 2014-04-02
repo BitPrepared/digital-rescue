@@ -14,7 +14,11 @@ use Monolog\Handler\TestHandler;
 
 // create a log channel
 $log = new Logger('cron');
-$handler = new TestHandler(Logger::WARNING);
+if ( DEBUG ) {
+	$handler = new TestHandler(Logger::DEBUG);
+} else {
+	$handler = new TestHandler(Logger::WARNING);
+}
 $log->pushHandler($handler);
 
 if ( $config['enviroment'] == 'production' && isset($config['log']['hipchat']) ) {
@@ -134,16 +138,22 @@ foreach ($task_list as $task_id => $task) {
 			$soci = $soci_trovati[0];
 			foreach ($soci as $cod_socio => $asa_socio) {
 				$log->addDebug('Import del codice socio '.$cod_socio);
-				$find = R::findOne('asa',' csocio = ? ',array($cod_socio));
-				if ( null == $find ) {
-					$asa = R::dispense('asa');
-					foreach ($asa_socio as $key => $value) {
-						$asa->$key = $value;
+				try {
+					$find = R::findOne('asa',' csocio = ? ',array($cod_socio));
+					if ( null == $find ) {
+						$asa = R::dispense('asa');
+						foreach ($asa_socio as $key => $value) {
+							$asa->$key = $value;
+							$log->addDebug('Setto '.$key.' -> '.$value);
+						}
+						$id = R::store($asa);
+					} else {
+						// CERCA LE 7 PICCOLE DIFFERENZE e FAI UPDATE E VERSIONING
+						$log->addWarning('Utente '.$cod_socio.' gia esistente. SKIP for now');
 					}
-					$id = R::store($asa);
-				} else {
-					// CERCA LE 7 PICCOLE DIFFERENZE e FAI UPDATE E VERSIONING
-					$log->addWarning('Utente '.$cod_socio.' gia esistente. SKIP for now');
+				} catch(Exception $e){
+					$log->addError('Problema con codice socio : '+$cod_socio);
+					throw $e;
 				}
 			}
 

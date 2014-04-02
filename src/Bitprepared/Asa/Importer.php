@@ -23,6 +23,7 @@ class Importer
 
     public function carica($filename)
     {
+
         $Reader = new \SpreadsheetReader_ODS($filename);
         $Reader->ChangeSheet(1);
         $numero_colonne_utili = 0;
@@ -62,10 +63,15 @@ class Importer
 
             } else {
                 $firstRow = false;
+                //CSOCIO    ORD CUN COGNOME NOME    INDIRIZZO   CAP RESIDENZA   PROV    DATAN   NASCITA FOCA    TIPO    NUMERO
                 /* MAPPA CAMPI */
+                $csocio_found = false;
                 for ($i=0; $i < $numero_colonne_utili; $i++) {
                     $keySet[$i] = $Row[$i];
-                }
+                    if ( trim($Row[$i]) == 'CSOCIO' ) $csocio_found = true;
+                 }
+                 if (!$csocio_found) throw new \Exception("Prima riga manca la intestazione/colonna del CSOCIO");
+                 
             }
         }
 
