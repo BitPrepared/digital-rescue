@@ -16,10 +16,15 @@ use Monolog\Handler\TestHandler;
 $log = new Logger('cron');
 if ( DEBUG ) {
 	$handler = new TestHandler(Logger::DEBUG);
+	$log->pushHandler($handler);
+	$handler = new \Monolog\Handler\StreamHandler($config['log']['filename'],Logger::DEBUG);
+	$log->pushHandler($handler);
 } else {
 	$handler = new TestHandler(Logger::WARNING);
+	$log->pushHandler($handler);
+	$handler = new \Monolog\Handler\StreamHandler($config['log']['filename'],Logger::WARNING);
+	$log->pushHandler($handler);
 }
-$log->pushHandler($handler);
 
 if ( $config['enviroment'] == 'production' && isset($config['log']['hipchat']) ) {
 	$hipchat = $config['log']['hipchat'];

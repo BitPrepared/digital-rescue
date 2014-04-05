@@ -25,11 +25,16 @@
         {
             "type": "git",
             "url": "https://github.com/nuovo/spreadsheet-reader.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/yoghi/redbean-prefix.git"
         }
 	],
     "require": {
         "slim/slim": "2.*",
         "gabordemooij/redbean": "3.5.1",
+        "daviddeutsch/redbean-prefix": "dev-master",
         "raveren/kint": "0.9",
         "swiftmailer/swiftmailer": "5.0.3",
         "nuovo/spreadsheet-reader": "dev-master",
