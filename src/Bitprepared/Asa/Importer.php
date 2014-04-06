@@ -83,14 +83,21 @@ class Importer
                     $contacts = $asa_socio->getContacts();
                     if ( null != $contacts ){
 
-                        $contactBeans = $R::dispense('contacts' , count($contacts) );
-                        for($i = 0; $i < count($contactBeans); $i++){
-                            $contactBeans[$i]->csocio = $cod_socio;
-                            $contactBeans[$i]->telefono = $contacts[i];
-                            $contactBeans[$i]->type = $R::enum('CELLULARE');
+                        if ( count($contacts) > 1 ){
+                            $contactBeans = $R::dispense('contacts' , count($contacts) );
+                            for($i = 0; $i < count($contacts); $i++){
+                                $contactBeans[$i]->csocio = $cod_socio;
+                                $contactBeans[$i]->telefono = $contacts[$i];
+                                $contactBeans[$i]->type = 'CELLULARE';
+                            }
+                            $R::storeAll($contactBeans);
+                        } else {
+                            $contactBean = $R::dispense('contacts');
+                            $contactBean->csocio = $cod_socio;
+                            $contactBean->telefono = $contacts[0];
+                            $contactBean->type = 'CELLULARE';
+                            $R::store($contactBean);
                         }
-
-                        $R::storeAll($contactBeans);
 
                     }
 
@@ -101,7 +108,7 @@ class Importer
                     //@Todo: fare versioning del dato precedente
 
                     //UPDATE
-                    $find->csocio           = $asa_socio->getCsocio();
+                    $find->csocio           = $cod_socio;
                     $find->gruppo           = $asa_socio->getGruppo();
                     $find->cognome          = $asa_socio->getCognome();
                     $find->nome             = $asa_socio->getNome();
@@ -121,16 +128,26 @@ class Importer
 
                         $presentContacts = $R::findAll('contacts',' csocio = ? ',array($cod_socio));
                         if ( null != $presentContacts ){
-                            $this->log->addError('situazione non gestita -> aggiornamento contatti');
+                            $this->log->addWarning('situazione non gestita -> aggiornamento contatti');
                         } else {
-                            $contactBeans = $R::dispense('contacts' , count($contacts) );
-                            for($i = 0; $i < count($contactBeans); $i++){
-                                $contactBeans[$i]->csocio = $cod_socio;
-                                $contactBeans[$i]->telefono = $contacts[i];
-                                $contactBeans[$i]->type = $R::enum('CELLULARE');
-                            }
+                            $this->log->addDebug('chiedo '.count($contacts).' contacts beans');
 
-                            $R::storeAll($contactBeans);
+                            if ( count($contacts) > 1 ){
+                                $contactBeans = $R::dispense('contacts' , count($contacts) );
+                                for($i = 0; $i < count($contacts); $i++){
+                                    $contactBeans[$i]->csocio = $cod_socio;
+                                    $contactBeans[$i]->telefono = $contacts[$i];
+                                    $contactBeans[$i]->type = 'CELLULARE';
+                                }
+
+                                $R::storeAll($contactBeans);
+                            } else {
+                                $contactBean = $R::dispense('contacts');
+                                $contactBean->csocio = $cod_socio;
+                                $contactBean->telefono = $contacts[0];
+                                $contactBean->type = 'CELLULARE';
+                                $R::store($contactBean);
+                            }
                         }
 
                     }

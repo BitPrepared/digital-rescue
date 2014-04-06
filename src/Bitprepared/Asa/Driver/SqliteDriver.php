@@ -27,13 +27,15 @@ class SqliteDriver extends BaseDriver
         parent::__construct($log);
         $this->filename = $filename;
         $this->errori = array();
-        R::addDatabase('DBsqlite','sqlite:'.$filename,'','',true);
-        R::freeze(true);
-
     }
 
     public function carica()
     {
+
+        $this->log->addInfo('Caricato in DBsqlite '.$this->filename);
+        R::addDatabase('DBsqlite','sqlite:'.$this->filename,'','',true);
+        R::freeze(true);
+
         $dump = array();
 
         R::selectDatabase('DBsqlite');
@@ -98,8 +100,6 @@ class SqliteDriver extends BaseDriver
 
         }
 
-        R::selectDatabase('DBsqlite');
-
         $profili = array();
         $elenco = R::getAll( 'select asa_csocio,asa_cognome,asa_nome,asa_indirizzo,asa_residenza,asa_datan,asa_nascita,asa_cap,asa_prov,asa_ord,asa_foca from asa_soci' );
         foreach ($elenco as $row => $asa_info) {
@@ -112,11 +112,14 @@ class SqliteDriver extends BaseDriver
 
             //R::getRow('select asa_nome from asa_regionisys',array($asa_info['asa_ord']));
 
-            $recapiti = R::getAll('select asa_numero from asa_recapiti where asa_csocio = ?',array($asa_info['asa_csocio']));
+            $recapiti = R::getAll('select asa_numero,asa_tipo from asa_recapiti where asa_csocio = ?',array($asa_info['asa_csocio']));
             $contacts = array();
+
+            $email_found = false;
             foreach($recapiti as $recapito){
                 if ( $recapito['asa_tipo'] == 'E' ){
                     $p->setEmail($recapito['asa_numero']);
+                    $email_found = true;
                 }
                 if ( $recapito['asa_tipo'] == 'B' ){
                     $contacts[] = $recapito['asa_numero'];
@@ -134,9 +137,15 @@ class SqliteDriver extends BaseDriver
             $p->setDatanascita($asa_info['asa_datan']);
             $p->setLuogonascita($asa_info['asa_nascita']);
             $p->setFoca($asa_info['asa_foca']);
-            $profili[$cod_socio] = $p;
+            if ( $email_found ) {
+                $profili[$cod_socio] = $p;
+            } else {
+                $this->log->addError('Socio '.$cod_socio.' senza email');
+            }
         }
 
         $this->setSociAsa($profili);
+
+        R::selectDatabase('DBsqlite'); //reset
     }
 }
