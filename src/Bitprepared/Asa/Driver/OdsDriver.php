@@ -28,7 +28,6 @@ class OdsDriver extends BaseDriver
     {
         parent::__construct($log);
         $this->filename = $filename;
-        $this->errori = array();
     }
 
     /**
@@ -65,7 +64,7 @@ class OdsDriver extends BaseDriver
 
                 if ( !array_key_exists($cod_socio, $soci_identificati) ) {
                     if ( !is_numeric($cod_socio) ) {
-                        $this->errori[] = "codice socio invalido - riga $rowId";
+                        $this->addErrore("codice socio invalido - riga $rowId");
                     } else {
                         $asa = array();
                         for ($i=0; $i < $numero_colonne_utili; $i++) {
@@ -89,7 +88,7 @@ class OdsDriver extends BaseDriver
             }
         }
 
-        if ( count($codici_socio_duplicati) > 0 ) $this->errori[] = "codici duplicati : ".json_encode($codici_socio_duplicati);
+        if ( count($codici_socio_duplicati) > 0 ) $this->addErrore("codici duplicati : ".json_encode($codici_socio_duplicati));
 
         $profili = array();
         foreach ($soci_identificati as $cod_socio => $asa_info) {

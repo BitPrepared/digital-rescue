@@ -27,19 +27,18 @@ class SqliteDriver extends BaseDriver
     {
         parent::__construct($log);
         $this->filename = $filename;
-        $this->errori = array();
     }
 
     public function carica()
     {
-
+        $idDbSqlite = sha1_file($this->filename);
         $this->log->addInfo('Caricato database DBsqlite '.$this->filename);
-        R::addDatabase('DBsqlite','sqlite:'.$this->filename,'','',true);
+        R::addDatabase('DBsqlite'.$idDbSqlite,'sqlite:'.$this->filename,'','',true);
         R::freeze(true);
 
         $dump = array();
 
-        R::selectDatabase('DBsqlite');
+        R::selectDatabase('DBsqlite'.$idDbSqlite);
         $listOfTables = R::inspect();
         foreach ($listOfTables as $tableName) {
             $this->log->addDebug( "import $tableName\n of DBsqlite" );
@@ -103,7 +102,7 @@ class SqliteDriver extends BaseDriver
         }
 
         $validator = new EmailValidator;
-        $profili = array();
+        $profili_interni = array();
         $elenco = R::getAll( 'select asa_csocio,asa_cognome,asa_nome,asa_indirizzo,asa_residenza,asa_datan,asa_nascita,asa_cap,asa_prov,asa_ord,asa_foca from asa_soci' );
         foreach ($elenco as $row => $asa_info) {
 
@@ -157,15 +156,15 @@ class SqliteDriver extends BaseDriver
             $p->setLuogonascita($asa_info['asa_nascita']);
             $p->setFoca($asa_info['asa_foca']);
             if ( $email_found ) {
-                $profili[$cod_socio] = $p;
+                $profili_interni[$cod_socio] = $p;
             } else {
                 $this->log->addError('Socio '.$cod_socio.' senza email');
-                $this->errori[] = 'Socio '.$cod_socio.' senza email';
+                $this->addErrore('Socio '.$cod_socio.' senza email');
             }
         }
 
-        $this->setSociAsa($profili);
+        $this->setSociAsa($profili_interni);
 
-        R::selectDatabase('DBsqlite'); //reset
+        R::selectDatabase('DBsqlite'.$idDbSqlite); //reset
     }
 }

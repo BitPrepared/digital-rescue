@@ -22,7 +22,7 @@ abstract class BaseDriver
      */
     private $profili;
 
-    protected $errori;
+    private $errori;
 
     protected $log;
 
@@ -37,6 +37,7 @@ abstract class BaseDriver
 
     protected function setSociAsa(array $soci)
     {
+        $this->log->addDebug('Aggiunto a '.count($this->profili).' '.count($soci));
         $this->profili = array_merge($this->profili, $soci);
     }
 
@@ -54,6 +55,14 @@ abstract class BaseDriver
     public function getErrori()
     {
         return $this->errori;
+    }
+
+    /**
+     * @param array $errori
+     */
+    public function addErrore($errore)
+    {
+        $this->errori[] = $errore;
     }
 
 }
