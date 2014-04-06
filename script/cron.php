@@ -32,15 +32,10 @@ if ( $config['enviroment'] == 'production' && isset($config['log']['hipchat']) )
 	$log->pushHandler($hipchat_handler);
 }
 
-// add records to the log
-//$log->addWarning('Foo');
-//$log->addError('Bar');
-
 R::setup($dsn,$username,$password);
 R::freeze(true);
 
 $task_list = R::find('task','status = ?', array(\Rescue\RequestStatus::QUEUE));
-//$task_list = R::findAll('task');
 
 foreach ($task_list as $task_id => $task) {
 	
@@ -69,7 +64,7 @@ foreach ($task_list as $task_id => $task) {
 		  ->setSubject('Estrazione Codice Censimento')
 
 		  // Set the From address with an associative array (ovverride from gmail if you use gmail account.)
-		  ->setFrom(array('webmaster@emiroagesci.it' => 'Webmaster Emiro Agesci'))
+		  ->setFrom( $config['email_sender'] )
 
 		  // Set the To addresses with an associative array
 		  ->setTo( array($email => $args->nome.' '.$args->cognome) )
@@ -136,36 +131,12 @@ foreach ($task_list as $task_id => $task) {
 		$args = json_decode($task->arguments);
 
 		try {
-			$importer = new \BitPrepared\Asa\Importer();
-			$filename = $args->filename;
-			$soci_trovati = $importer->carica($filename);
 
-			$soci = $soci_trovati[0];
-			foreach ($soci as $cod_socio => $asa_socio) {
-				$log->addDebug('Import del codice socio '.$cod_socio);
-				try {
-					$find = R::findOne('asa',' csocio = ? ',array($cod_socio));
-					if ( null == $find ) {
-						$asa = R::dispense('asa');
-						foreach ($asa_socio as $key => $value) {
-							$asa->$key = $value;
-							$log->addDebug('Setto '.$key.' -> '.$value);
-						}
-						$id = R::store($asa);
-					} else {
-						// CERCA LE 7 PICCOLE DIFFERENZE e FAI UPDATE E VERSIONING
-						$log->addWarning('Utente '.$cod_socio.' gia esistente. SKIP for now');
-					}
-				} catch(Exception $e){
-					$log->addError('Problema con codice socio : '+$cod_socio);
-					throw $e;
-				}
-			}
-
-			foreach ($soci_trovati[1] as $error ) {
-				$log->addError($error);
-			}
-
+            $driver = new \BitPrepared\Asa\Driver\OdsDriver($log,$filename);
+            $importer = new \BitPrepared\Asa\Importer($driver,$log,R);
+            $importer->load();
+            $importer->writeOnDb();
+            
 			$task->status = \Rescue\RequestStatus::ELABORATED; 
 			$task->result = "Import del file $filename avvenuto correttamente";
 
