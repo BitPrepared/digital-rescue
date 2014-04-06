@@ -21,10 +21,21 @@ use Rescue\Model\User;
 class Importer
 {
 
+    // -- config --
+
     private $driver;
     private $log;
     private $db;
 
+    // -- esterne --
+
+    private $update = false;
+
+    // -- interne --
+
+    /**
+     * @var array
+     */
     private $profili;
 
     public function __construct(BaseDriver $driver, Logger $logger,RedBean_Facade $db)
@@ -110,59 +121,66 @@ class Importer
                     $this->log->addInfo('Aggiunto utente '.$cod_socio.' con id '.$id.$ids);
 
                 } else {
-                    $this->log->addWarning('Utente '.$cod_socio.' gia esistente. con id '.$find->id);
 
-                    //VERSIONING
-                    //@Todo: fare versioning del dato precedente
+                    if ( $this->update ) {
 
-                    //UPDATE
-                    $find->csocio           = $cod_socio;
-                    $find->gruppo           = $asa_socio->getGruppo();
-                    $find->cognome          = $asa_socio->getCognome();
-                    $find->nome             = $asa_socio->getNome();
-                    $find->email            = $asa_socio->getEmail();
-                    $find->indirizzo        = $asa_socio->getIndirizzo();
-                    $find->cap              = $asa_socio->getCap();
-                    $find->residenza        = $asa_socio->getResidenza();
-                    $find->prov             = $asa_socio->getProv();
-                    $find->datanascita      = $asa_socio->getDatanascita();
-                    $find->luogonascita     = $asa_socio->getLuogonascita();
-                    $find->foca             = $asa_socio->getFoca();
+                        $this->log->addInfo('Utente '.$cod_socio.' in aggiornamento');
 
-                    $R::store($find);
+                        //VERSIONING
+                        //@Todo: fare versioning del dato precedente
 
-                    $contacts = $asa_socio->getContacts();
-                    if ( null != $contacts ){
+                        //UPDATE
+                        $find->csocio           = $cod_socio;
+                        $find->gruppo           = $asa_socio->getGruppo();
+                        $find->cognome          = $asa_socio->getCognome();
+                        $find->nome             = $asa_socio->getNome();
+                        $find->email            = $asa_socio->getEmail();
+                        $find->indirizzo        = $asa_socio->getIndirizzo();
+                        $find->cap              = $asa_socio->getCap();
+                        $find->residenza        = $asa_socio->getResidenza();
+                        $find->prov             = $asa_socio->getProv();
+                        $find->datanascita      = $asa_socio->getDatanascita();
+                        $find->luogonascita     = $asa_socio->getLuogonascita();
+                        $find->foca             = $asa_socio->getFoca();
 
-                        $presentContacts = $R::findAll('contacts',' csocio = ? ',array($cod_socio));
-                        if ( null != $presentContacts ){
-                            $this->log->addDebug('Rimosso i vecchi contatti di '.$cod_socio);
-                            $R::trashAll($presentContacts);
-                        }
-                        $this->log->addDebug('chiedo '.count($contacts).' contacts beans');
+                        $R::store($find);
 
-                        if ( count($contacts) > 1 ){
-                            $contactBeans = $R::dispense('contacts' , count($contacts) );
-                            for($i = 0; $i < count($contacts); $i++){
-                                $contactBeans[$i]->csocio = $cod_socio;
-                                $contactBeans[$i]->telefono = $contacts[$i];
-                                $contactBeans[$i]->type = 'CELLULARE';
+                        $contacts = $asa_socio->getContacts();
+                        if ( null != $contacts ){
+
+                            $presentContacts = $R::findAll('contacts',' csocio = ? ',array($cod_socio));
+                            if ( null != $presentContacts ){
+                                $this->log->addDebug('Rimosso i vecchi contatti di '.$cod_socio);
+                                $R::trashAll($presentContacts);
+                            }
+                            $this->log->addDebug('chiedo '.count($contacts).' contacts beans');
+
+                            if ( count($contacts) > 1 ){
+                                $contactBeans = $R::dispense('contacts' , count($contacts) );
+                                for($i = 0; $i < count($contacts); $i++){
+                                    $contactBeans[$i]->csocio = $cod_socio;
+                                    $contactBeans[$i]->telefono = $contacts[$i];
+                                    $contactBeans[$i]->type = 'CELLULARE';
+                                }
+
+                                $R::storeAll($contactBeans);
+                            } else {
+                                $contactBean = $R::dispense('contacts');
+                                $contactBean->csocio = $cod_socio;
+                                $contactBean->telefono = $contacts[0];
+                                $contactBean->type = 'CELLULARE';
+                                $R::store($contactBean);
                             }
 
-                            $R::storeAll($contactBeans);
+                            $this->log->addInfo('Aggiunti all\'utente '.$cod_socio.' '.count($contacts).' contatti');
+
+
                         } else {
-                            $contactBean = $R::dispense('contacts');
-                            $contactBean->csocio = $cod_socio;
-                            $contactBean->telefono = $contacts[0];
-                            $contactBean->type = 'CELLULARE';
-                            $R::store($contactBean);
+                            $this->log->addWarning('Utente '.$cod_socio.' senza contatti');
                         }
 
-                        $this->log->addInfo('Aggiunti all\'utente '.$cod_socio.' , '.count($contacts).' contatti');
-
-
                     } else {
-                        $this->log->addWarning('Utente '.$cod_socio.' senza contatti');
+                        $this->log->addWarning('Utente '.$cod_socio.' gia esistente. con id '.$find->id.' skip');
                     }
 
                 }
@@ -174,6 +192,22 @@ class Importer
         } //for
 
 
+    }
+
+    /**
+     * @param boolean $update
+     */
+    public function setUpdate($update)
+    {
+        $this->update = $update;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function getUpdate()
+    {
+        return $this->update;
     }
 
 }

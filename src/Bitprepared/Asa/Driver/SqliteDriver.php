@@ -114,7 +114,6 @@ class SqliteDriver extends BaseDriver
             $p->setCsocio($cod_socio);
 
             //R::getRow('select asa_nome from asa_regionisys',array($asa_info['asa_ord']));
-
             $recapiti = R::getAll('select asa_numero,asa_tipo from asa_recapiti where asa_csocio = ?',array($cod_socio));
             $contacts = array();
 

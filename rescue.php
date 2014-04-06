@@ -30,6 +30,9 @@ $arguments->addOption(array('export-csv','e'), array(
     'default' => getcwd(),
     'description' => 'Setta la  directory dove esportare i soci come csv'));
 
+$arguments->addFlag(array('update-db', 'u'), 'Abilita la sovra-scrittura su db');
+
+
 $arguments->parse();
 if ($arguments['help']) {
     echo $arguments->getHelpScreen();
@@ -116,6 +119,12 @@ if ( isset($arguments_parsed['import-asa']) ) {
     foreach ($drivers as $driver) {
         try {
             $importer = new \BitPrepared\Asa\Importer($driver,$log,$R);
+
+            if ( isset($arguments_parsed['update-db']) ) {
+                $log->addInfo('Abilitata la sovra-scrittura su database');
+                $importer->setUpdate(true);
+            }
+
             $importer->load();
             $importer->writeOnDb();
         } catch (Exception $e) {
