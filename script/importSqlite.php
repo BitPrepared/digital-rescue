@@ -95,9 +95,11 @@ foreach ($dump as $tableName => $righe) {
 		if ( $rowid > 1 ) {
 			$query = '';
 			foreach ($elenco_campi as $key => $value) {
-				$query .= $prefix.$key .' = "'. $value .'" AND ';
+				$query .= $prefix.$key .' = \''. addslashes($value) .'\' AND ';
 			}
 			$query = substr($query, 0, -4);
+
+            //SELECT * FROM `asa_recapiti`  WHERE asa_CSOCIO = "1354314" AND asa_NUMERO = "C/O Seminario Vescovile "Don Benzi" - Via Covignan" AND asa_TIPO = "A"
 			$book  = R::findOne( $tableName, $query);
 			if ( $book != null ) continue;
 		}

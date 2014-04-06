@@ -18,7 +18,7 @@
     "autoload": {
         "psr-4": { 
             "BitPrepared\\": "src/BitPrepared/" ,
-            "Rescue\\": "src/" 
+            "Rescue\\": "src/Rescue/"
             }
     },
 	"repositories": [

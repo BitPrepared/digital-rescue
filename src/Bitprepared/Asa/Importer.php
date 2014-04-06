@@ -2,6 +2,11 @@
 
 namespace Bitprepared\Asa;
 
+use BitPrepared\Asa\Driver\BaseDriver;
+use Monolog\Logger;
+use RedBean_Facade;
+use Rescue\Model\User;
+
 /**
  * BitPrepared - ASA Import Bundle
  *
@@ -15,68 +20,130 @@ namespace Bitprepared\Asa;
  */
 class Importer
 {
-    /**
-     * Constructor
-     * @param array $userSettings Associative array of application settings
-     */
-    public function __construct() {}
 
-    public function carica($filename)
+    private $driver;
+    private $log;
+    private $db;
+
+    private $profili;
+
+    public function __construct(BaseDriver $driver, Logger $logger,RedBean_Facade $db)
     {
+        $this->driver = $driver;
+        $this->log = $logger;
+        $this->db = $db;
+    }
 
-        $Reader = new \SpreadsheetReader_ODS($filename);
-        $Reader->ChangeSheet(1);
-        $numero_colonne_utili = 0;
-        $Reader->next();
-        $Row = $Reader->current();
-        for ($i=0; $i < count($Row); $i++) {
-            if ( $Row[$i] == '' ) break;
+    public function load()
+    {
+        try {
+            $this->driver->carica();
+            $this->profili = $this->driver->getProfili();
+            foreach ($this->driver->getErrori() as $error ) {
+                $this->log->addError($error);
+            }
+        } catch (\Exception $e) {
+            $this->log->addError($e->getMessage());
+            throw new \Exception('Impossibile completare l\'import');
         }
-        $numero_colonne_utili = $i;
+    }
 
-        $keySet = array();
-        $codici_socio_duplicati = array();
-        $soci_identificati = array();
-        $errori = array();
+    public function writeOnDb()
+    {
+        $soci = $this->profili;
+        $R = $this->db;
 
-        $firstRow = true;
-        $rowId = 0;
-        foreach ($Reader as $Row) {
-            $rowId++; //parto dalla riga 1
-            if (!$firstRow) {
+        $R::selectDatabase('default');
+        $R::freeze(true);
 
-                $cod_socio = $Row[0];
+        $newUsers = array();
+        foreach ($soci as $asa_socio) {
+            $cod_socio = $asa_socio->getCsocio();
+            $this->log->addDebug('Import del codice socio '.$cod_socio);
+            try {
+                $find = $R::findOne('profiles',' csocio = ? ',array($cod_socio));
+                if (null == $find) {
+                    $asa = $R::dispense('profiles');
 
-                if ( !array_key_exists($cod_socio, $soci_identificati) ) {
-                    if ( !is_numeric($cod_socio) ) {
-                        $errori[] = "codice socio invalido - riga $rowId";
-                    } else {
-                        $asa = array();
-                        for ($i=0; $i < $numero_colonne_utili; $i++) {
-                            $asa[$keySet[$i]] = $Row[$i];
+                    $asa->csocio           = $cod_socio;
+                    $asa->gruppo           = $asa_socio->getGruppo();
+                    $asa->cognome          = $asa_socio->getCognome();
+                    $asa->nome             = $asa_socio->getNome();
+                    $asa->email            = $asa_socio->getEmail();
+                    $asa->indirizzo        = $asa_socio->getIndirizzo();
+                    $asa->cap              = $asa_socio->getCap();
+                    $asa->residenza        = $asa_socio->getResidenza();
+                    $asa->prov             = $asa_socio->getProv();
+                    $asa->datanascita      = $asa_socio->getDatanascita();
+                    $asa->luogonascita     = $asa_socio->getLuogonascita();
+                    $asa->foca             = $asa_socio->getFoca();
+
+                    $id = $R::store($asa);
+
+                    $contacts = $asa_socio->getContacts();
+                    if ( null != $contacts ){
+
+                        $contactBeans = $R::dispense('contacts' , count($contacts) );
+                        for($i = 0; $i < count($contactBeans); $i++){
+                            $contactBeans[$i]->csocio = $cod_socio;
+                            $contactBeans[$i]->telefono = $contacts[i];
+                            $contactBeans[$i]->type = $R::enum('CELLULARE');
                         }
-                        $soci_identificati[$cod_socio] = $asa;
+
+                        $R::storeAll($contactBeans);
+
                     }
+
                 } else {
-                    $codici_socio_duplicati[$cod_socio] = isset($codici_socio_duplicati[$cod_socio]) ? $codici_socio_duplicati[$cod_socio]+1 : 1;
+                    $this->log->addWarning('Utente '.$cod_socio.' gia esistente. con id '.$find->id);
+
+                    //VERSIONING
+                    //@Todo: fare versioning del dato precedente
+
+                    //UPDATE
+                    $find->csocio           = $asa_socio->getCsocio();
+                    $find->gruppo           = $asa_socio->getGruppo();
+                    $find->cognome          = $asa_socio->getCognome();
+                    $find->nome             = $asa_socio->getNome();
+                    $find->email            = $asa_socio->getEmail();
+                    $find->indirizzo        = $asa_socio->getIndirizzo();
+                    $find->cap              = $asa_socio->getCap();
+                    $find->residenza        = $asa_socio->getResidenza();
+                    $find->prov             = $asa_socio->getProv();
+                    $find->datanascita      = $asa_socio->getDatanascita();
+                    $find->luogonascita     = $asa_socio->getLuogonascita();
+                    $find->foca             = $asa_socio->getFoca();
+
+                    $R::store($find);
+
+                    $contacts = $asa_socio->getContacts();
+                    if ( null != $contacts ){
+
+                        $presentContacts = $R::findAll('contacts',' csocio = ? ',array($cod_socio));
+                        if ( null != $presentContacts ){
+                            $this->log->addError('situazione non gestita -> aggiornamento contatti');
+                        } else {
+                            $contactBeans = $R::dispense('contacts' , count($contacts) );
+                            for($i = 0; $i < count($contactBeans); $i++){
+                                $contactBeans[$i]->csocio = $cod_socio;
+                                $contactBeans[$i]->telefono = $contacts[i];
+                                $contactBeans[$i]->type = $R::enum('CELLULARE');
+                            }
+
+                            $R::storeAll($contactBeans);
+                        }
+
+                    }
+
                 }
 
-            } else {
-                $firstRow = false;
-                //CSOCIO    ORD CUN COGNOME NOME    INDIRIZZO   CAP RESIDENZA   PROV    DATAN   NASCITA FOCA    TIPO    NUMERO
-                /* MAPPA CAMPI */
-                $csocio_found = false;
-                for ($i=0; $i < $numero_colonne_utili; $i++) {
-                    $keySet[$i] = $Row[$i];
-                    if ( trim($Row[$i]) == 'CSOCIO' ) $csocio_found = true;
-                 }
-                 if (!$csocio_found) throw new \Exception("Prima riga manca la intestazione/colonna del CSOCIO");
-                 
+            } catch (Exception $e) {
+                $this->log->addError('Problema con codice socio : '+$cod_socio);
+                throw $e;
             }
-        }
+        } //for
 
-        if ( count($codici_socio_duplicati) > 0 ) $errori[] = "codici duplicati : ".json_encode($codici_socio_duplicati);
-        return array($soci_identificati,$errori);
 
     }
+
 }

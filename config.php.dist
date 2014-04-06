@@ -27,6 +27,7 @@ $config = array(
         'username' => '',
         'password' => ''
     ),
+    'email_sender' => array('indirizzo@dominio' => 'nome mittente'),
     'title' => 'Titolo del portale',
     'template_dir' => '../resources/templates/',
     'import' => array(
