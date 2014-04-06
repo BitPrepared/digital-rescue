@@ -38,6 +38,7 @@
         "raveren/kint": "0.9",
         "swiftmailer/swiftmailer": "5.0.3",
         "nuovo/spreadsheet-reader": "dev-master",
+        "egulias/email-validator":"1.0.x-dev",
         "flynsarmy/slim-monolog": "dev-master",
         "wp-cli/php-cli-tools": "v0.9.4",
         "php": ">=5.3.0"

@@ -136,7 +136,7 @@ foreach ($task_list as $task_id => $task) {
             $importer = new \BitPrepared\Asa\Importer($driver,$log,R);
             $importer->load();
             $importer->writeOnDb();
-            
+
 			$task->status = \Rescue\RequestStatus::ELABORATED; 
 			$task->result = "Import del file $filename avvenuto correttamente";
 

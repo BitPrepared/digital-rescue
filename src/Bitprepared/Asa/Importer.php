@@ -36,6 +36,7 @@ class Importer
 
     public function load()
     {
+        $this->log->addInfo('Inizio caricamento da driver dei profili');
         try {
             $this->driver->carica();
             $this->profili = $this->driver->getProfili();
@@ -50,13 +51,14 @@ class Importer
 
     public function writeOnDb()
     {
+        $this->log->addInfo('Scrittura profili su database');
         $soci = $this->profili;
         $R = $this->db;
 
         $R::selectDatabase('default');
         $R::freeze(true);
 
-        $newUsers = array();
+        // $newUsers = array();
         foreach ($soci as $asa_socio) {
             $cod_socio = $asa_socio->getCsocio();
             $this->log->addDebug('Import del codice socio '.$cod_socio);
@@ -81,8 +83,9 @@ class Importer
                     $id = $R::store($asa);
 
                     $contacts = $asa_socio->getContacts();
+                    $ids = '';
                     if ( null != $contacts ){
-
+                        $ids = ' e con i seguenti contatti ';
                         if ( count($contacts) > 1 ){
                             $contactBeans = $R::dispense('contacts' , count($contacts) );
                             for($i = 0; $i < count($contacts); $i++){
@@ -90,16 +93,21 @@ class Importer
                                 $contactBeans[$i]->telefono = $contacts[$i];
                                 $contactBeans[$i]->type = 'CELLULARE';
                             }
-                            $R::storeAll($contactBeans);
+                            foreach( $R::storeAll($contactBeans) as $singleId) {
+                                $ids .= $singleId.',';
+                            }
+                            $ids = substr($ids, 0, -1);
                         } else {
                             $contactBean = $R::dispense('contacts');
                             $contactBean->csocio = $cod_socio;
                             $contactBean->telefono = $contacts[0];
                             $contactBean->type = 'CELLULARE';
-                            $R::store($contactBean);
+                            $ids .= $R::store($contactBean);
                         }
 
                     }
+
+                    $this->log->addInfo('Aggiunto utente '.$cod_socio.' con id '.$id.$ids);
 
                 } else {
                     $this->log->addWarning('Utente '.$cod_socio.' gia esistente. con id '.$find->id);
@@ -128,28 +136,33 @@ class Importer
 
                         $presentContacts = $R::findAll('contacts',' csocio = ? ',array($cod_socio));
                         if ( null != $presentContacts ){
-                            $this->log->addWarning('situazione non gestita -> aggiornamento contatti');
-                        } else {
-                            $this->log->addDebug('chiedo '.count($contacts).' contacts beans');
+                            $this->log->addDebug('Rimosso i vecchi contatti di '.$cod_socio);
+                            $R::trashAll($presentContacts);
+                        }
+                        $this->log->addDebug('chiedo '.count($contacts).' contacts beans');
 
-                            if ( count($contacts) > 1 ){
-                                $contactBeans = $R::dispense('contacts' , count($contacts) );
-                                for($i = 0; $i < count($contacts); $i++){
-                                    $contactBeans[$i]->csocio = $cod_socio;
-                                    $contactBeans[$i]->telefono = $contacts[$i];
-                                    $contactBeans[$i]->type = 'CELLULARE';
-                                }
-
-                                $R::storeAll($contactBeans);
-                            } else {
-                                $contactBean = $R::dispense('contacts');
-                                $contactBean->csocio = $cod_socio;
-                                $contactBean->telefono = $contacts[0];
-                                $contactBean->type = 'CELLULARE';
-                                $R::store($contactBean);
+                        if ( count($contacts) > 1 ){
+                            $contactBeans = $R::dispense('contacts' , count($contacts) );
+                            for($i = 0; $i < count($contacts); $i++){
+                                $contactBeans[$i]->csocio = $cod_socio;
+                                $contactBeans[$i]->telefono = $contacts[$i];
+                                $contactBeans[$i]->type = 'CELLULARE';
                             }
+
+                            $R::storeAll($contactBeans);
+                        } else {
+                            $contactBean = $R::dispense('contacts');
+                            $contactBean->csocio = $cod_socio;
+                            $contactBean->telefono = $contacts[0];
+                            $contactBean->type = 'CELLULARE';
+                            $R::store($contactBean);
                         }
 
+                        $this->log->addInfo('Aggiunti all\'utente '.$cod_socio.' , '.count($contacts).' contatti');
+
+
+                    } else {
+                        $this->log->addWarning('Utente '.$cod_socio.' senza contatti');
                     }
 
                 }
