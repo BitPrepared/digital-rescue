@@ -116,22 +116,26 @@ if ( isset($arguments_parsed['import-asa']) ) {
     $log->addInfo('Trovati '.count($drivers).' driver da importare');
 
     $R = new RedBean_Facade();
+    $importer = new \BitPrepared\Asa\Importer($log,$R);
     foreach ($drivers as $driver) {
         try {
-            $importer = new \BitPrepared\Asa\Importer($driver,$log,$R);
-
-            if ( isset($arguments_parsed['update-db']) ) {
-                $log->addInfo('Abilitata la sovra-scrittura su database');
-                $importer->setUpdate(true);
-            }
-
-            $importer->load();
-            $importer->writeOnDb();
+            $importer->load($driver);
         } catch (Exception $e) {
             $message = $e->getMessage();
             $log->addError($message);
             $log->addError($e->getTraceAsString());
         }
+    }
+    try {
+
+        if ( isset($arguments_parsed['update-db']) ) {
+            $log->addInfo('Abilitata la sovra-scrittura su database');
+            $importer->setUpdate(true);
+        }
+
+        $importer->syncAsaToRescue();
+    } catch (Exception $e){
+
     }
 
 }

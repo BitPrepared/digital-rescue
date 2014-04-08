@@ -23,7 +23,6 @@ class Importer
 
     // -- config --
 
-    private $driver;
     private $log;
     private $db;
 
@@ -34,34 +33,45 @@ class Importer
     // -- interne --
 
     /**
+     * Profili utenti
      * @var array
      */
     private $profili;
 
-    public function __construct(BaseDriver $driver, Logger $logger,RedBean_Facade $db)
+    public function __construct(Logger $logger,RedBean_Facade $db)
     {
-        $this->driver = $driver;
         $this->log = $logger;
         $this->db = $db;
+        $this->profili = array();
     }
 
-    public function load()
+    public function load(BaseDriver $driver)
     {
         $this->log->addInfo('Inizio caricamento da driver dei profili');
         try {
-            $this->driver->carica();
-            $this->profili = $this->driver->getProfili();
-            foreach ($this->driver->getErrori() as $error ) {
+            $driver->carica();
+            $this->profili = array_merge($this->profili,$driver->getProfili());
+            foreach ($driver->getErrori() as $error ) {
                 $this->log->addError($error);
             }
         } catch (\Exception $e) {
             $this->log->addError($e->getMessage());
             throw new \Exception('Impossibile completare l\'import');
         }
+        $this->log->addInfo('Caricamento da driver dei profili terminato');
     }
 
+    /*
     public function writeOnDb()
     {
+
+
+
+    }
+    */
+
+    public function syncAsaToRescue(){
+
         $this->log->addInfo('Scrittura profili su database');
         $soci = $this->profili;
         $R = $this->db;
@@ -190,7 +200,6 @@ class Importer
                 throw $e;
             }
         } //for
-
 
     }
 

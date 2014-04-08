@@ -15,16 +15,19 @@ namespace Bitprepared\Asa\Driver;
 
 use BitPrepared\Asa\Driver\BaseDriver;
 use BitPrepared\Asa\Model\ProfiloAsa;
+use Monolog\Logger;
 
 class OdsDriver extends BaseDriver
 {
     private $filename;
 
+
     /**
-     * Constructor
-     * @param $filename percorso al file da caricare
+     * Costruttore
+     * @param Logger $log logger
+     * @param string $filename percorso al file da caricare
      */
-    public function __construct($log,$filename)
+    public function __construct(Logger $log,string $filename)
     {
         parent::__construct($log);
         $this->filename = $filename;
