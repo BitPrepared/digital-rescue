@@ -160,7 +160,7 @@ foreach ($task_list as $task_id => $task) {
 
 }
 
-$log_records = $handler->getRecords();
+//$log_records = $handler->getRecords();
 /*
 	{
 	  "log_records": [
@@ -181,10 +181,11 @@ $log_records = $handler->getRecords();
 	  ]
 	}
 */
+/*
 foreach ($log_records as $record) {
 	$level = constant('\Monolog\Logger::'. $record['level_name']);
 	\Rescue\RescueLogger::taskLog($task_id, $level ,$record['message'],0,$record['datetime']);
 }
-
+*/
 
 ?>
