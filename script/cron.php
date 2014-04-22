@@ -93,6 +93,7 @@ foreach ($task_list as $task_id => $task) {
 
 		// Pass a variable name to the send() method
 		try {
+			$failures = array();
 			if (!$mailer->send($message, $failures))
 			{
 				//echo "Failures:";
@@ -105,7 +106,7 @@ foreach ($task_list as $task_id => $task) {
 				)
 				*/
 				$task->status = \Rescue\RequestStatus::FAILED;
-				$task->result = "Fallito l'invio a ".json_decode($failures);
+				$task->result = "Fallito l'invio a ".json_encode($failures);
 				R::store($task);
 			} else {
 				$task->status = \Rescue\RequestStatus::ELABORATED; 
