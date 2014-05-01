@@ -54,46 +54,47 @@ foreach ($task_list as $task_id => $task) {
 			array($args->nome,$args->cognome,$args->datanascita,$args->luogonascita));
 		//R::getRow('select * from page where title like ? limit 1', array('%Jazz%'));
 
-		$codice_socio = $socio['csocio'];
-		$email = $socio['numero'];
+        // To use the ArrayLogger
+        $logger = new Swift_Plugins_Loggers_ArrayLogger();
+        //$logger = new Swift_Plugins_Loggers_EchoLogger();
 
-		// Create the message
-		$message = Swift_Message::newInstance()
+        // Pass a variable name to the send() method
+        try {
 
-		  // Give the message a subject
-		  ->setSubject('Estrazione Codice Censimento')
+            $codice_socio = $socio['csocio'];
+            $email = $socio['numero'];
 
-		  // Set the From address with an associative array (ovverride from gmail if you use gmail account.)
-		  ->setFrom( $config['email_sender'] )
+            // Create the message
+            $message = Swift_Message::newInstance()
 
-		  // Set the To addresses with an associative array
-		  ->setTo( array($email => $args->nome.' '.$args->cognome) )
+              // Give the message a subject
+              ->setSubject('Estrazione Codice Censimento')
 
-		  // Give it a body
-		  ->setBody('Codice Censimento : '.$codice_socio)
+              // Set the From address with an associative array (ovverride from gmail if you use gmail account.)
+              ->setFrom( $config['email_sender'] )
 
-		  // And optionally an alternative body
-		  ->addPart('<p>Codice Censimento : <strong>'.$codice_socio.'</strong></p>', 'text/html');
+              // Set the To addresses with an associative array
+              ->setTo( array($email => $args->nome.' '.$args->cognome) )
 
-		  // Optionally add any attachments
-		  //->attach(Swift_Attachment::fromPath('my-document.pdf'));
+              // Give it a body
+              ->setBody('Codice Censimento : '.$codice_socio)
 
-		// To use the ArrayLogger
-		$logger = new Swift_Plugins_Loggers_ArrayLogger();
-		//$logger = new Swift_Plugins_Loggers_EchoLogger();
+              // And optionally an alternative body
+              ->addPart('<p>Codice Censimento : <strong>'.$codice_socio.'</strong></p>', 'text/html');
 
-		$smtpConfig = $config['smtp'];
+              // Optionally add any attachments
+              //->attach(Swift_Attachment::fromPath('my-document.pdf'));
 
-		$transport = Swift_SmtpTransport::newInstance($smtpConfig['host'], $smtpConfig['port'], $smtpConfig['security'])
-		->setUsername($smtpConfig['username'])
-  		->setPassword($smtpConfig['password']);
+            $smtpConfig = $config['smtp'];
 
-		// Create the Mailer using your created Transport
-		$mailer = Swift_Mailer::newInstance($transport);
-		$mailer->registerPlugin(new Swift_Plugins_LoggerPlugin($logger));
+            $transport = Swift_SmtpTransport::newInstance($smtpConfig['host'], $smtpConfig['port'], $smtpConfig['security'])
+            ->setUsername($smtpConfig['username'])
+            ->setPassword($smtpConfig['password']);
 
-		// Pass a variable name to the send() method
-		try {
+            // Create the Mailer using your created Transport
+            $mailer = Swift_Mailer::newInstance($transport);
+            $mailer->registerPlugin(new Swift_Plugins_LoggerPlugin($logger));
+
 			$failures = array();
 			if (!$mailer->send($message, $failures))
 			{
@@ -114,6 +115,14 @@ foreach ($task_list as $task_id => $task) {
 				$task->result = "Inviato correttamente codice socio : $codice_socio a $email";
 			}
 		}
+        catch(Swift_RfcComplianceException $er){
+            $message = $er->getMessage();
+            $log->addError($message);
+            $log->addError($er->getTraceAsString());
+            $task->result = "Fallito l'invio, errore nel formato della mail [$email]";
+            $task->status = \Rescue\RequestStatus::FAILED;
+            R::store($task);
+        }
 		catch(Swift_TransportException $e) {
 			$message = $e->getMessage();
 			$log->addError($message);
