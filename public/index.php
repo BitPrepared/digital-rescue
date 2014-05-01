@@ -278,7 +278,7 @@ $app->get('/', 'authenticate', function () use ($app) {
 	$app->render('index.html', array(
 		'title' => $title,
 		'baseUrl' => $app->request->getRootUri().'/',
-		'footerText' => '&copy;2014 Stefano Tamagnini. Design by ....'
+		'footerText' => '&copy;2014 Stefano Tamagnini - Agesci Emilia Romagna'
 	));
 
 });
@@ -333,9 +333,9 @@ $app->post('/rescue/codicecensimento' , function () use ($app) {
 	$app->log->debug('cerco per data '.$datanascita);
 	$luogonascita = $obj_request->luogonascita;
 
-	$find = R::findOne('asa',' nome = ? and cognome = ? ',array($nome,$cognome));
+	$find = R::findOne('asa',' nome = ? and cognome = ? and datan = ? ',array($nome,$cognome,$datanascita));
 	if ( $find != null ) {
-		$app->log->debug('nome e cognome validi procedo con l\'inserimento della richiesta');
+		$app->log->debug('nome, cognome e datanascita validi procedo con l\'inserimento della richiesta');
 		try {
 
 			$t = new stdClass;
