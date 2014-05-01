@@ -34,7 +34,7 @@ if ( isset($config['log']) ){
 		$hipchat = $config['log']['hipchat'];
 		$handlers[] = new \Monolog\Handler\HipChatHandler($hipchat['token'], $hipchat['room'], $hipchat['name'], $hipchat['notify'], \Monolog\Logger::INFO, $hipchat['bubble'], $hipchat['useSSL']);
 	}
-	$handlers[] = new \Monolog\Handler\StreamHandler($config['log']['filename']);	
+	$handlers[] = new \Monolog\Handler\StreamHandler($config['log']['filename']);
 	$logger = new \Flynsarmy\SlimMonolog\Log\MonologWriter(array(
 	    'handlers' => $handlers
 	));
@@ -318,6 +318,7 @@ $app->post('/rescue/codicecensimento' , function () use ($app) {
 	$name_of_the_action =  $req->post('action');*/
 
 	$body = $app->request->getBody();
+
 	$app->log->debug('Richiesta ricerca codicecensimento ' . $body);
 
 	$obj_request = json_decode($body);

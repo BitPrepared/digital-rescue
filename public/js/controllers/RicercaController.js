@@ -118,6 +118,7 @@ rescueApp.controller('RicercaController' , function RicercaController($scope,$mo
     } // fine cerca
 
     $scope.getLocation = function(val) {
+    	/*
 	    return $http.get(baseUrl+'/location', {
 	      params: {
 	        location: val,
@@ -129,22 +130,9 @@ rescueApp.controller('RicercaController' , function RicercaController($scope,$mo
 	      });
 	      return addresses;
 	    });
+	    */
+		return ["Badia Polesine","Bagnacavallo","Bari","Bassano Del Grappa","Bazzano","Bellaria Igea Marina","Benevento","Bentivoglio","Bentivoglio (bo)","Bentivoglio Bo","Bergamo","Bertinoro","Bielorussia","Bishop S Stortford (gb)","Bobbio","Bollate","Bologna","Bomporto","Bondeno","Borghi","Borgo Franco Sul Po","Borgo San Lorenzo","Borgonovo V.t.","Borgonovo Val Tidone","Bosco Mesola","Bouake - Costa D Avorio","Brasile","Brescello","Brescia","Brindisi","Broni","Bronte","Brunico","Busto Arsizio"];
+
 	};
-/*
-    $scope.getLocation = function(val) {
-	    return $http.get('http://maps.googleapis.com/maps/api/geocode/json', {
-	      params: {
-	        address: val,
-	        sensor: false
-	      }
-	    }).then(function(res){
-	      var addresses = [];
-	      angular.forEach(res.data.results, function(item){
-	        addresses.push(item.formatted_address);
-	      });
-	      return addresses;
-	    });
-	};
-*/
 });
 
