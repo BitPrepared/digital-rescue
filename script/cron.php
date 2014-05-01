@@ -17,7 +17,7 @@ $log = new Logger('cron');
 if ( DEBUG ) {
 	$handler = new TestHandler(Logger::DEBUG);
 	$log->pushHandler($handler);
-	$handler = new \Monolog\Handler\StreamHandler($config['log']['filename'],Logger::DEBUG);
+	$handler = new \Monolog\Handler\StreamHandler($config['log']['filename'].".due",Logger::DEBUG);
 	$log->pushHandler($handler);
 } else {
 	$handler = new TestHandler(Logger::WARNING);
@@ -80,6 +80,7 @@ foreach ($task_list as $task_id => $task) {
 
 		// To use the ArrayLogger
 		$logger = new Swift_Plugins_Loggers_ArrayLogger();
+		//$logger = new Swift_Plugins_Loggers_EchoLogger();
 
 		$smtpConfig = $config['smtp'];
 
