@@ -86,3 +86,8 @@ ASA_ORD è il gruppo
 
 
 php rescue.php -i /Users/yoghi/Documents/Workspace/digital-rescue/tests/resources/manysqlite/
+
+
+## Installazione
+
+composer.phar install --no-dev --optimize-autoloader
