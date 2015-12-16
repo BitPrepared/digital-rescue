@@ -4,6 +4,6 @@ namespace Rescue;
 
 class RequestType
 {
-    const SEARCH = "SEARCH";
-    const IMPORT = "IMPORT";
+    const SEARCH = 'SEARCH';
+    const IMPORT = 'IMPORT';
 }

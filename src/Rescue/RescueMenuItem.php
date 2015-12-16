@@ -2,14 +2,13 @@
 
 namespace Rescue;
 
-use \stdClass;
+use stdClass;
 
 class RescueMenuItem
 {
-
-    public static function createMenuItem($title,$path,$controller,$templateUrl)
+    public static function createMenuItem($title, $path, $controller, $templateUrl)
     {
-        $menu = new stdClass;
+        $menu = new stdClass();
         $menu->Path = $path;
         $menu->Controller = $controller;
         $menu->TemplateUrl = $templateUrl;
@@ -17,5 +16,4 @@ class RescueMenuItem
 
         return $menu;
     }
-
 }

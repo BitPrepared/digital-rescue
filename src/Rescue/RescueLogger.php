@@ -2,12 +2,12 @@
 
 namespace Rescue;
 
-use RedBean_Facade as R;
 use Monolog\Logger;
+use RedBean_Facade as R;
 
 class RescueLogger
 {
-    public static function addHistory($srcUrl,$srcParam,$message,$creatorId = 0)
+    public static function addHistory($srcUrl, $srcParam, $message, $creatorId = 0)
     {
         $history = R::dispense('history');
         $history->recall_url = $srcUrl;
@@ -21,38 +21,40 @@ class RescueLogger
         return $id;
     }
 
-    public static function taskLog($task_id,$level,$message,$creatorId = 0,$creationDate = "")
+    public static function taskLog($task_id, $level, $message, $creatorId = 0, $creationDate = '')
     {
-        $level_text = "";
-        if ( "" == $creationDate ) $creationDate = R::isoDateTime();
-        if ( is_numeric($level) ) {
+        $level_text = '';
+        if ('' == $creationDate) {
+            $creationDate = R::isoDateTime();
+        }
+        if (is_numeric($level)) {
             switch ($level) {
-                case Logger::EMERGENCY 	:
-                    $level_text = "EMERGENCY";
+                case Logger::EMERGENCY    :
+                    $level_text = 'EMERGENCY';
                     break;
-                case Logger::ALERT 		:
-                    $level_text = "ALERT";
+                case Logger::ALERT        :
+                    $level_text = 'ALERT';
                     break;
-                case Logger::CRITICAL		:
-                    $level_text = "CRITICAL";
+                case Logger::CRITICAL        :
+                    $level_text = 'CRITICAL';
                     break;
-                case Logger::ERROR		:
-                    $level_text = "ERROR";
+                case Logger::ERROR        :
+                    $level_text = 'ERROR';
                     break;
-                case Logger::WARNING			:
-                    $level_text = "WARNING";
+                case Logger::WARNING            :
+                    $level_text = 'WARNING';
                     break;
-                case Logger::NOTICE		:
-                    $level_text = "NOTICE";
+                case Logger::NOTICE        :
+                    $level_text = 'NOTICE';
                     break;
-                case Logger::INFO			:
-                    $level_text = "INFO";
+                case Logger::INFO            :
+                    $level_text = 'INFO';
                     break;
-                case Logger::DEBUG		:
-                    $level_text = "DEBUG";
+                case Logger::DEBUG        :
+                    $level_text = 'DEBUG';
                     break;
                 default:
-                    $level_text = "WARNING";
+                    $level_text = 'WARNING';
                     break;
             }
         }
@@ -67,5 +69,4 @@ class RescueLogger
 
         return $id;
     }
-
 }

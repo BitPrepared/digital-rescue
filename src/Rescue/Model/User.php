@@ -2,15 +2,12 @@
 /**
  * Created by PhpStorm.
  * User: Stefano "Yoghi" Tamagnini
- * Date: 05/04/14 - 23:52
- * 
+ * Date: 05/04/14 - 23:52.
  */
-
 namespace Rescue\Model;
 
-
-class User {
-
+class User
+{
     private $csocio;
     private $role;
     private $password;
@@ -147,7 +144,4 @@ class User {
     {
         return $this->role;
     }
-
-
-
-} 
+}
