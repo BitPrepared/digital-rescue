@@ -1,14 +1,16 @@
 <?php
 /**
- * BitPrepared - ASA Import Bundle
+ * BitPrepared - ASA Import Bundle.
  *
  * @author      Stefano Tamagnini <yoghi@sigmalab.net>
  * @copyright   2014 Stefano Tamagnini
  * @date : 05/04/14 - 21:36
+ *
  * @link
+ *
  * @license
+ *
  * @version
- * @package
  */
 namespace Bitprepared\Asa\Model;
 
@@ -236,5 +238,4 @@ class ProfiloAsa
     {
         return $this->prov;
     }
-
 }

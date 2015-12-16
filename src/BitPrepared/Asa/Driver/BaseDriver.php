@@ -1,16 +1,17 @@
 <?php
 /**
- * BitPrepared - ASA Import Bundle
+ * BitPrepared - ASA Import Bundle.
  *
  * @author      Stefano Tamagnini <yoghi@sigmalab.net>
  * @copyright   2014 Stefano Tamagnini
  * @date : 05/04/14 - 21:27
+ *
  * @link
+ *
  * @license
+ *
  * @version
- * @package
  */
-
 namespace Bitprepared\Asa\Driver;
 
 use Monolog\Logger;
@@ -29,8 +30,8 @@ abstract class BaseDriver
     public function __construct(Logger $log)
     {
         $this->log = $log;
-        $this->profili = array();
-        $this->errori = array();
+        $this->profili = [];
+        $this->errori = [];
     }
 
     abstract public function carica();
@@ -46,7 +47,7 @@ abstract class BaseDriver
      */
     public function getProfili()
     {
-       return $this->profili;
+        return $this->profili;
     }
 
     /**
@@ -64,5 +65,4 @@ abstract class BaseDriver
     {
         $this->errori[] = $errore;
     }
-
 }

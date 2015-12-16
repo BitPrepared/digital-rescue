@@ -3,56 +3,54 @@
 
 require '../vendor/autoload.php';
 require '../config.php';
-use RedBean_Facade as R;
+use Monolog\Handler\TestHandler;
 
-$dsn      = 'mysql:host='.$config['db']['host'].';dbname='.$config['db']['database'];
+$dsn = 'mysql:host='.$config['db']['host'].';dbname='.$config['db']['database'];
 $username = $config['db']['user'];
 $password = $config['db']['password'];
 
 use Monolog\Logger;
-use Monolog\Handler\TestHandler;
+use RedBean_Facade as R;
 
 // create a log channel
 $log = new Logger('cron');
-if ( DEBUG ) {
-	$handler = new TestHandler(Logger::DEBUG);
-	$log->pushHandler($handler);
-	$handler = new \Monolog\Handler\StreamHandler($config['log']['filename'].".due",Logger::DEBUG);
-	$log->pushHandler($handler);
+if (DEBUG) {
+    $handler = new TestHandler(Logger::DEBUG);
+    $log->pushHandler($handler);
+    $handler = new \Monolog\Handler\StreamHandler($config['log']['filename'].'.due', Logger::DEBUG);
+    $log->pushHandler($handler);
 } else {
-	$handler = new TestHandler(Logger::WARNING);
-	$log->pushHandler($handler);
-	$handler = new \Monolog\Handler\StreamHandler($config['log']['filename'],Logger::WARNING);
-	$log->pushHandler($handler);
+    $handler = new TestHandler(Logger::WARNING);
+    $log->pushHandler($handler);
+    $handler = new \Monolog\Handler\StreamHandler($config['log']['filename'], Logger::WARNING);
+    $log->pushHandler($handler);
 }
 
-if ( $config['enviroment'] == 'production' && isset($config['log']['hipchat']) ) {
-	$hipchat = $config['log']['hipchat'];
-	$hipchat_handler = new \Monolog\Handler\HipChatHandler($hipchat['token'], $hipchat['room'], $hipchat['name'], $hipchat['notify'], \Monolog\Logger::ERROR, $hipchat['bubble'], $hipchat['useSSL']);
-	$log->pushHandler($hipchat_handler);
+if ($config['enviroment'] == 'production' && isset($config['log']['hipchat'])) {
+    $hipchat = $config['log']['hipchat'];
+    $hipchat_handler = new \Monolog\Handler\HipChatHandler($hipchat['token'], $hipchat['room'], $hipchat['name'], $hipchat['notify'], \Monolog\Logger::ERROR, $hipchat['bubble'], $hipchat['useSSL']);
+    $log->pushHandler($hipchat_handler);
 }
 
-R::setup($dsn,$username,$password);
+R::setup($dsn, $username, $password);
 R::freeze(true);
 
-$task_list = R::find('task','status = ?', array(\Rescue\RequestStatus::QUEUE));
+$task_list = R::find('task', 'status = ?', [\Rescue\RequestStatus::QUEUE]);
 
 foreach ($task_list as $task_id => $task) {
-	
-	$args = json_decode($task->arguments);
+    $args = json_decode($task->arguments);
 
-	$task->updated = R::isoDateTime();
-	$task->status = \Rescue\RequestStatus::IN_PROGRESS;
+    $task->updated = R::isoDateTime();
+    $task->status = \Rescue\RequestStatus::IN_PROGRESS;
 
-	R::store($task);
+    R::store($task);
 
-	\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,'Task preso in carico');
-	
-	if( \Rescue\RequestType::SEARCH == $task->type ) {
+    \Rescue\RescueLogger::taskLog($task_id, Logger::INFO, 'Task preso in carico');
 
-		$socio = R::getRow('select * from asa where nome = ? and cognome = ? and datan = ? and nascita = ?',
-			array($args->nome,$args->cognome,$args->datanascita,$args->luogonascita));
-		//R::getRow('select * from page where title like ? limit 1', array('%Jazz%'));
+    if (\Rescue\RequestType::SEARCH == $task->type) {
+        $socio = R::getRow('select * from asa where nome = ? and cognome = ? and datan = ? and nascita = ?',
+            [$args->nome, $args->cognome, $args->datanascita, $args->luogonascita]);
+        //R::getRow('select * from page where title like ? limit 1', array('%Jazz%'));
 
         // To use the ArrayLogger
         $logger = new Swift_Plugins_Loggers_ArrayLogger();
@@ -60,7 +58,6 @@ foreach ($task_list as $task_id => $task) {
 
         // Pass a variable name to the send() method
         try {
-
             $codice_socio = $socio['csocio'];
             $email = $socio['numero'];
 
@@ -71,10 +68,10 @@ foreach ($task_list as $task_id => $task) {
               ->setSubject('Estrazione Codice Censimento')
 
               // Set the From address with an associative array (ovverride from gmail if you use gmail account.)
-              ->setFrom( $config['email_sender'] )
+              ->setFrom($config['email_sender'])
 
               // Set the To addresses with an associative array
-              ->setTo( array($email => $args->nome.' '.$args->cognome) )
+              ->setTo([$email => $args->nome.' '.$args->cognome])
 
               // Give it a body
               ->setBody('Codice Censimento : '.$codice_socio)
@@ -95,106 +92,97 @@ foreach ($task_list as $task_id => $task) {
             $mailer = Swift_Mailer::newInstance($transport);
             $mailer->registerPlugin(new Swift_Plugins_LoggerPlugin($logger));
 
-			$failures = array();
-			if (!$mailer->send($message, $failures))
-			{
-				//echo "Failures:";
-				//print_r($failures);
-				/*
-				Failures:
-				Array (
-				  0 => receiver@bad-domain.org,
-				  1 => other-receiver@bad-domain.org
-				)
-				*/
-				$task->status = \Rescue\RequestStatus::FAILED;
-				$task->result = "Fallito l'invio a ".json_encode($failures);
-				R::store($task);
-			} else {
-				$task->status = \Rescue\RequestStatus::ELABORATED; 
-				$task->result = "Inviato correttamente codice socio : $codice_socio a $email";
-			}
-		}
-        catch(Swift_RfcComplianceException $er){
+            $failures = [];
+            if (!$mailer->send($message, $failures)) {
+                //echo "Failures:";
+                //print_r($failures);
+                /*
+                Failures:
+                Array (
+                  0 => receiver@bad-domain.org,
+                  1 => other-receiver@bad-domain.org
+                )
+                */
+                $task->status = \Rescue\RequestStatus::FAILED;
+                $task->result = "Fallito l'invio a ".json_encode($failures);
+                R::store($task);
+            } else {
+                $task->status = \Rescue\RequestStatus::ELABORATED;
+                $task->result = "Inviato correttamente codice socio : $codice_socio a $email";
+            }
+        } catch (Swift_RfcComplianceException $er) {
             $message = $er->getMessage();
             $log->addError($message);
             $log->addError($er->getTraceAsString());
             $task->result = "Fallito l'invio, errore nel formato della mail [$email]";
             $task->status = \Rescue\RequestStatus::FAILED;
             R::store($task);
+        } catch (Swift_TransportException $e) {
+            $message = $e->getMessage();
+            $log->addError($message);
+            $log->addError($e->getTraceAsString());
+            $task->result = "Fallito l'invio, errore nel trasporto";
+            $task->status = \Rescue\RequestStatus::FAILED;
+            R::store($task);
         }
-		catch(Swift_TransportException $e) {
-			$message = $e->getMessage();
-			$log->addError($message);
-			$log->addError($e->getTraceAsString());
-			$task->result = "Fallito l'invio, errore nel trasporto";
-			$task->status = \Rescue\RequestStatus::FAILED; 
-			R::store($task);
-		}
 
-		\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,$logger->dump());
+        \Rescue\RescueLogger::taskLog($task_id, Logger::INFO, $logger->dump());
+    } // end search
 
-	} // end search 
+    if (\Rescue\RequestType::IMPORT == $task->type) {
 
-	if( \Rescue\RequestType::IMPORT == $task->type ) {
+        // /Users/yoghi/Documents/workspace/digital-rescue/test/resources/elenco.ods
+        $args = json_decode($task->arguments);
 
-		// /Users/yoghi/Documents/workspace/digital-rescue/test/resources/elenco.ods
-		$args = json_decode($task->arguments);
-
-		try {
-
-            $driver = new \BitPrepared\Asa\Driver\OdsDriver($log,$filename);
-            $importer = new \BitPrepared\Asa\Importer($driver,$log,R);
+        try {
+            $driver = new \BitPrepared\Asa\Driver\OdsDriver($log, $filename);
+            $importer = new \BitPrepared\Asa\Importer($driver, $log, R);
             $importer->load();
             $importer->writeOnDb();
 
-			$task->status = \Rescue\RequestStatus::ELABORATED; 
-			$task->result = "Import del file $filename avvenuto correttamente";
+            $task->status = \Rescue\RequestStatus::ELABORATED;
+            $task->result = "Import del file $filename avvenuto correttamente";
 
-			rename($filename, $filename.'.ELABORATED');
-		} 
-		catch(Exception $e){
-			$message = $e->getMessage();
-			$log->addError($message);
-			$log->addError($e->getTraceAsString());
-			$task->result = "Fallito l'invio, errore nel trasporto";
-			$task->status = \Rescue\RequestStatus::FAILED;
-			R::store($task);
-		}
+            rename($filename, $filename.'.ELABORATED');
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            $log->addError($message);
+            $log->addError($e->getTraceAsString());
+            $task->result = "Fallito l'invio, errore nel trasporto";
+            $task->status = \Rescue\RequestStatus::FAILED;
+            R::store($task);
+        }
+    } // end import
 
-
-	} // end import
-
-	R::store($task);
-	\Rescue\RescueLogger::taskLog($task_id,Logger::INFO,'Task completato con stato : '.$task->status);
-
+    R::store($task);
+    \Rescue\RescueLogger::taskLog($task_id, Logger::INFO, 'Task completato con stato : '.$task->status);
 }
 
 //$log_records = $handler->getRecords();
 /*
-	{
-	  "log_records": [
-	    {
-	      "message": "Failed to authenticate on SMTP server with username \"orsetto@gmail.com\" using 2 possible authenticators",
-	      "context": [],
-	      "level": 400,
-	      "level_name": "ERROR",
-	      "channel": "cron",
-	      "datetime": {
-	        "date": "2014-01-22 18:52:53",
-	        "timezone_type": 3,
-	        "timezone": "Europe/Rome"
-	      },
-	      "extra": [],
-	      "formatted": "[2014-01-22 18:52:53] cron.ERROR: Failed to authenticate on SMTP server with username \"orsetto@gmail.com\" using 2 possible authenticators [] []\n"
-	    }
-	  ]
-	}
+    {
+      "log_records": [
+        {
+          "message": "Failed to authenticate on SMTP server with username \"orsetto@gmail.com\" using 2 possible authenticators",
+          "context": [],
+          "level": 400,
+          "level_name": "ERROR",
+          "channel": "cron",
+          "datetime": {
+            "date": "2014-01-22 18:52:53",
+            "timezone_type": 3,
+            "timezone": "Europe/Rome"
+          },
+          "extra": [],
+          "formatted": "[2014-01-22 18:52:53] cron.ERROR: Failed to authenticate on SMTP server with username \"orsetto@gmail.com\" using 2 possible authenticators [] []\n"
+        }
+      ]
+    }
 */
 /*
 foreach ($log_records as $record) {
-	$level = constant('\Monolog\Logger::'. $record['level_name']);
-	\Rescue\RescueLogger::taskLog($task_id, $level ,$record['message'],0,$record['datetime']);
+    $level = constant('\Monolog\Logger::'. $record['level_name']);
+    \Rescue\RescueLogger::taskLog($task_id, $level ,$record['message'],0,$record['datetime']);
 }
 */
 
